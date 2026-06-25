@@ -147,11 +147,11 @@ try {
     }
 
     $logText = Get-Content -Raw $Log
-    Assert-LogContains $logText 'access 200 /health'
-    Assert-LogContains $logText 'access 200 static'
-    Assert-LogContains $logText 'access 405 method'
-    Assert-LogContains $logText 'access 403 forbidden'
-    Assert-LogContains $logText 'access 404 not-found'
+    Assert-LogContains $logText 'access status=200 route=/health'
+    Assert-LogContains $logText 'access status=200 route=static'
+    Assert-LogContains $logText 'access status=405 reason=method'
+    Assert-LogContains $logText 'access status=403 reason=forbidden'
+    Assert-LogContains $logText 'access status=404 reason=not-found'
 
     Write-Host 'verify: ok'
 }
