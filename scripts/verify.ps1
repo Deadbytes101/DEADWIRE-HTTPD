@@ -117,6 +117,14 @@ try {
         throw 'verify: /health body mismatch'
     }
 
+    $response = Send-RawHttp "HEAD /health HTTP/1.0`r`nHost: 127.0.0.1`r`n`r`n"
+    Assert-Status $response '200'
+    Assert-Header $response 'Content-Type: text/plain; charset=utf-8'
+    Assert-Header $response 'Content-Length: 13'
+    if ((Get-Body $response).Length -ne 0) {
+        throw 'verify: HEAD /health returned a body'
+    }
+
     $response = Send-RawHttp "GET / HTTP/1.0`r`nHost: 127.0.0.1`r`n`r`n"
     Assert-Status $response '200'
     Assert-Header $response 'Content-Type: text/html; charset=utf-8'
