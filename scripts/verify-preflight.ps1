@@ -18,7 +18,7 @@ if ($exeInfo.Length -le 0) {
 
 $src = Get-Content -Raw $Gen
 $must = @(
-    'DEADWIRE HTTPD v0.8.0 PREFLIGHT',
+    'DEADWIRE HTTPD v1.0.0 STABLE',
     'fatal: bad arg',
     'head_request: .long 0',
     'access status=200 route=/health',
@@ -31,7 +31,7 @@ foreach ($item in $must) {
 }
 
 $mustNot = @(
-    'DEADWIRE HTTPD v0.3.0 ACCESS LOG',
+    'DEADWIRE HTTPD CORE',
     'access 200 /health',
     'access 405 method'
 )
