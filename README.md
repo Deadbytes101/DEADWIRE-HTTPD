@@ -10,27 +10,31 @@ No HTTP framework. No server library. The platform boundary is explicit:
 ## Current milestone
 
 ```txt
-DEADWIRE HTTPD v0.1.0 INITIAL NATIVE CORE
+DEADWIRE HTTPD v0.9.0 RELEASE POLISH
 ```
 
-This public history starts at a clean initial import. The server already has a small static-file core, MIME headers, path guards, access log lines, and Windows/Linux backends.
+The project has a verified Windows release path for the stable static-file core: default local bind, configurable port, configurable bind address, HEAD support, structured access logs, and explicit bad-argument failure checks.
 
-The project is still intentionally small. It is not a TLS server, not an async framework, and not an internet-facing hardened daemon yet.
+DEADWIRE is still intentionally small. It is not a TLS server, not an async framework, and not an internet-facing hardened daemon.
 
-## v0.1.0 scope
+## Current scope
 
-DEADWIRE does one narrow job on both Windows and Linux:
+DEADWIRE does one narrow job:
 
-- bind `127.0.0.1:18080`
+- bind `127.0.0.1:18080` by default
+- accept an optional port argument on Windows: `deadwire.exe 19090`
+- accept an optional bind argument on Windows: `deadwire.exe 19091 127.0.0.1`
+- accept `0.0.0.0` when explicitly requested
 - accept blocking TCP clients
 - parse `GET <path> HTTP/...`
+- parse `HEAD <path> HTTP/...`
 - serve files from `public/`
 - render `/` as `public/index.html`
 - return `/health`
 - emit explicit `Content-Type` and `Content-Length`
 - detect MIME for `.html`, `.htm`, `.txt`, `.css`, `.js`, and `.svg`
-- print tiny access log lines to stdout
-- reject non-GET methods with `405`
+- print small structured access log lines to stdout
+- reject unsupported methods with `405`
 - reject path traversal with `403`
 - reject raw `%` paths until percent-decoding exists
 - return missing files with `404`
@@ -39,11 +43,11 @@ DEADWIRE does one narrow job on both Windows and Linux:
 Example access log lines:
 
 ```txt
-access 200 static
-access 200 /health
-access 405 method
-access 403 forbidden
-access 404 not-found
+access status=200 route=static
+access status=200 route=/health
+access status=405 reason=method
+access status=403 reason=forbidden
+access status=404 reason=not-found
 ```
 
 ## Platform model
@@ -59,6 +63,8 @@ The `Makefile` selects the backend automatically:
 Windows_NT -> build/deadwire.exe
 Linux      -> build/deadwire
 ```
+
+On Windows, the build generates `build/deadwire_windows_port.s` from `src/deadwire_windows.s` before assembling. The generated file adds the current Windows release features while preserving the small assembly core.
 
 ## Windows build
 
@@ -76,12 +82,17 @@ make verify
 make run
 ```
 
-Manual test:
+Manual tests:
 
 ```powershell
+build\deadwire.exe
 curl.exe http://127.0.0.1:18080/health
-curl.exe http://127.0.0.1:18080/hello.txt
-curl.exe -I http://127.0.0.1:18080/
+
+build\deadwire.exe 19090
+curl.exe http://127.0.0.1:19090/health
+
+build\deadwire.exe 19091 127.0.0.1
+curl.exe -I http://127.0.0.1:19091/health
 ```
 
 ## Linux / WSL2 build
@@ -102,14 +113,7 @@ make verify
 make run
 ```
 
-Expected startup banner:
-
-```txt
-DEADWIRE HTTPD v0.3.0 ACCESS LOG
-listening on http://127.0.0.1:18080
-```
-
-The source banner still reports the pre-rewrite internal milestone. Public release naming starts at `v0.1.0`.
+The Linux backend remains the compact raw-syscall static server path. The current argument parsing release train is Windows-first.
 
 ## Verify
 
@@ -117,45 +121,52 @@ The source banner still reports the pre-rewrite internal milestone. Public relea
 make verify
 ```
 
-The verification checks:
+The Windows verification checks:
 
 - `/health` returns `deadwire: ok`
 - `/` returns `Content-Type: text/html; charset=utf-8`
 - `/hello.txt` returns `Content-Type: text/plain; charset=utf-8`
 - `/style.css` returns `Content-Type: text/css; charset=utf-8`
+- `HEAD /health` returns headers without a body
 - `POST /` returns `405`
 - traversal attempts return `403`
 - a missing file returns `404`
-- access log lines are emitted for the checked request classes
+- structured access log lines are emitted
+- custom port works on `19090`
+- explicit loopback bind works on `127.0.0.1:19091`
+- explicit any-address bind works on `0.0.0.0:19092`
+- bad argument cases exit with `fatal: bad arg`
+- generated Windows source contains expected release markers
 
 ## Current limitations
 
-- fixed port: `18080`
-- fixed bind address: `127.0.0.1`
 - single-threaded blocking I/O
 - HTTP/1.0 response style
-- access log is intentionally small and status-class based
 - no TLS
 - no keep-alive
 - no chunked encoding
 - no percent-decoding yet
 - max request buffer: 4096 bytes
 - max served file size: 65536 bytes
+- Windows argument support is generated at build time
 
 ## Release tags
 
 ```txt
 v0.1.0  initial native assembly server
+v0.2.0  port arg
+v0.3.0  bind arg
+v0.4.0  log shape
+v0.5.0  HEAD request
+v0.6.0  any bind
+v0.7.0  bad arg verify
+v0.8.0  preflight verify
+v0.9.0  release polish
 ```
 
 ## Roadmap
 
 ```txt
-v0.2.0  configurable port
-v0.3.0  configurable bind address
-v0.4.0  structured access log
-v0.5.0  stricter HTTP parser
-v0.6.0  release hardening
 v1.0.0  stable static-file core
 ```
 
@@ -164,7 +175,7 @@ v1.0.0  stable static-file core
 Linux path:
 
 ```txt
-socket -> setsockopt -> bind -> listen -> accept -> read -> parse -> openat -> read -> write -> close
+socket -> bind -> listen -> accept -> read -> parse -> openat -> read -> write -> close
 ```
 
 Windows path:
