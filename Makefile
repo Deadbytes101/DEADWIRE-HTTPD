@@ -10,6 +10,7 @@ LINK_CMD = $(CC) -nostdlib -Wl,-e,mainCRTStartup -Wl,--subsystem,console -o $(TA
 GEN_WIN_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/gen-win-port.ps1
 VERIFY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
 VERIFY_PORT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-port.ps1 -Port 19090
+VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19091 -Bind 127.0.0.1
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -20,6 +21,7 @@ SRC := src/deadwire.s
 LINK_CMD = $(LD) -o $(TARGET) $(OBJ)
 VERIFY_CMD = sh scripts/verify.sh
 VERIFY_PORT_CMD = true
+VERIFY_BIND_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Linux x86-64 and Windows x86-64)
 endif
@@ -69,6 +71,7 @@ run: all
 verify: all
 	$(VERIFY_CMD)
 	$(VERIFY_PORT_CMD)
+	$(VERIFY_BIND_CMD)
 
 clean:
 	$(POWERSHELL) -NoProfile -Command "if (Test-Path build) { Remove-Item build -Recurse -Force }"
