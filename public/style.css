@@ -1,0 +1,49 @@
+:root {
+  color-scheme: dark;
+  background: #000;
+  color: #d8d8d8;
+  font-family: "Lucida Console", "Courier New", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #000;
+}
+
+body {
+  padding: 24px;
+}
+
+.screen {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: clamp(13px, 1.45vw, 18px);
+  line-height: 1.32;
+  color: #e6e6e6;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.18);
+}
+
+.screen::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.035),
+    rgba(255,255,255,0.035) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  opacity: 0.28;
+}
+
+::selection {
+  background: #fff;
+  color: #000;
+}

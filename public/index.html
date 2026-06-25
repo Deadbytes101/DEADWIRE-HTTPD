@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DEADWIRE HTTPD</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<pre class="screen">
+DEADWIRE HTTPD 0.3.0
+ACCESS LOG / LOCAL HOST / HAND-WRITTEN X86-64
+
+THIS PAGE IS SERVED BY THE PROGRAM YOU JUST BUILT.
+NO REACT. NO NODE. NO EXPRESS. NO RUNTIME SERVER.
+
+HOST: 127.0.0.1
+PORT: 18080
+MODE: BLOCKING HTTP/1.0
+ROOT: public/
+
+WINDOWS PATH:
+  WSAStartup -&gt; socket -&gt; bind -&gt; listen -&gt; accept -&gt; recv -&gt; CreateFileA -&gt; ReadFile -&gt; send
+
+LINUX PATH:
+  socket -&gt; setsockopt -&gt; bind -&gt; listen -&gt; accept -&gt; read -&gt; openat -&gt; read -&gt; write
+
+ROUTES:
+  GET /           public/index.html    text/html
+  GET /health     live check           text/plain
+  GET /hello.txt  static file          text/plain
+  GET /style.css  static style         text/css
+
+GUARDS:
+  POST /              405
+  traversal probe     403
+  raw percent path    403
+  missing file        404
+
+STATUS:
+  SERVER CORE: ALIVE
+  ACCESS LOG:  ENABLED
+  HEAP:        NONE
+  FRAMEWORK:   NONE
+
+make verify
+verify: ok
+
+A SMALL SERVER. A CLEAR BOUNDARY. EVERY BYTE ANSWERS.
+</pre>
+</body>
+</html>
