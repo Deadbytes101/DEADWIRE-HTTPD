@@ -6,6 +6,7 @@ $s = [IO.File]::ReadAllText($In).Replace("`r`n", "`n")
 $NL = [string][char]10
 $DQ = [string][char]34
 function Swap([string]$a,[string]$b,[string]$n){ if(-not $script:s.Contains($a)){ throw "missing: $n" }; $script:s=$script:s.Replace($a,$b) }
+function SpliceRange([int]$start,[int]$end,[string]$replacement,[string]$name){ if($start -lt 0 -or $end -lt $start){ throw "missing: $name" }; $script:s = $script:s.Substring(0,$start) + $replacement + $script:s.Substring($end) }
 Swap ".extern CloseHandle`n" ".extern CloseHandle`n.extern GetCommandLineA`n" 'extern'
 Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.5.0 HEAD' 'banner'
 Swap 'listening on http://127.0.0.1:18080' 'listening on http://<bind>:<port>' 'listen line'
@@ -26,24 +27,6 @@ Swap 'access 413 too-large' 'access status=413 reason=too-large' 'log 413'
 Swap 'access 414 uri-too-long' 'access status=414 reason=uri-too-long' 'log 414'
 Swap 'access 500 file-error' 'access status=500 reason=file-error' 'log 500'
 Swap 'written_done: .long 0' ('written_done: .long 0'+$NL+'head_request: .long 0') 'head flag'
-$oldMethod = @'
-    lea r10, [rip + request_buf]
-    cmp byte ptr [r10 + 0], 'G'
-    jne .method_not_allowed
-    cmp byte ptr [r10 + 1], 'E'
-    jne .method_not_allowed
-    cmp byte ptr [r10 + 2], 'T'
-    jne .method_not_allowed
-    cmp byte ptr [r10 + 3], ' '
-    jne .method_not_allowed
-
-    lea r10, [rip + request_buf + 4]   # path start
-    mov qword ptr [rbp - 16], r10
-    mov r11, qword ptr [rbp - 8]
-    sub r11, 4
-    mov qword ptr [rbp - 24], r11      # max scan length
-    mov qword ptr [rbp - 32], 0        # path length
-'@
 $newMethod = @'
     mov dword ptr [rip + head_request], 0
     lea r10, [rip + request_buf]
@@ -80,16 +63,11 @@ $newMethod = @'
     mov qword ptr [rbp - 24], r11      # max scan length
     mov qword ptr [rbp - 32], 0        # path length
 '@
-Swap $oldMethod $newMethod 'head method'
-$oldSendBody = @'
-    mov rcx, qword ptr [rip + current_client]
-    mov rdx, qword ptr [rip + response_body_ptr]
-    mov r8, qword ptr [rip + response_body_len]
-    call send_all
-
-    leave
-    ret
-'@
+$methodStart = $s.IndexOf(('    lea r10, [rip + request_buf]'+$NL+'    cmp byte ptr [r10 + 0], '+[string][char]39+'G'+[string][char]39))
+$methodTail = '    mov qword ptr [rbp - 32], 0        # path length'
+$methodEnd = $s.IndexOf($methodTail, $methodStart)
+if($methodEnd -ge 0){ $methodEnd += $methodTail.Length }
+SpliceRange $methodStart $methodEnd $newMethod 'head method'
 $newSendBody = @'
     cmp dword ptr [rip + head_request], 0
     jne .response_done
@@ -102,7 +80,13 @@ $newSendBody = @'
     leave
     ret
 '@
-Swap $oldSendBody $newSendBody 'head body skip'
+$responseStart = $s.IndexOf('send_response:')
+$bodyNeedle = '    mov rcx, qword ptr [rip + current_client]'+$NL+'    mov rdx, qword ptr [rip + response_body_ptr]'
+$bodyStart = $s.IndexOf($bodyNeedle, $responseStart)
+$bodyTail = '    ret'
+$bodyEnd = $s.IndexOf($bodyTail, $bodyStart)
+if($bodyEnd -ge 0){ $bodyEnd += $bodyTail.Length }
+SpliceRange $bodyStart $bodyEnd $newSendBody 'head body skip'
 $fn = @'
 # configure_args() parses optional: <port> [127.0.0.1|0.0.0.0]
 configure_args:
