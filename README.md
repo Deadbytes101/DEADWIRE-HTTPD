@@ -6,6 +6,7 @@ No HTTP framework. No server library. The platform boundary is explicit:
 
 - Linux backend: raw Linux syscalls
 - Windows backend: WinSock2 + Kernel32 API calls
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/13397280-5830-4526-afaf-4503d32be06c" />
 
 ## Current milestone
 
