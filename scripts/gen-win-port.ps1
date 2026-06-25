@@ -7,7 +7,7 @@ $NL = [string][char]10
 $DQ = [string][char]34
 function Swap([string]$a,[string]$b,[string]$n){ if(-not $script:s.Contains($a)){ throw "missing: $n" }; $script:s=$script:s.Replace($a,$b) }
 Swap ".extern CloseHandle`n" ".extern CloseHandle`n.extern GetCommandLineA`n" 'extern'
-Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.3.0 BIND ARG' 'banner'
+Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.4.0 LOG SHAPE' 'banner'
 Swap 'listening on http://127.0.0.1:18080' 'listening on http://<bind>:<port>' 'listen line'
 Swap 'fatal: bind failed; is port 18080 already in use?' 'fatal: bind failed; address unavailable' 'bind text'
 Swap ('fatal_bind_end:'+$NL+'fatal_listen:') ('fatal_bind_end:'+$NL+'fatal_arg:    .ascii '+$DQ+'fatal: bad arg\r\n'+$DQ+$NL+'fatal_arg_end:'+$NL+'fatal_listen:') 'arg text'
@@ -16,6 +16,15 @@ Swap ('health_path_end:'+$NL+$NL+'sockaddr_in:') ('health_path_end:'+$NL+$NL+'.s
 Swap '    .word 0xa046              # port 18080 in network byte order' '    .word 0xa046              # default port 18080 in network byte order' 'port comment'
 Swap ('mainCRTStartup:'+$NL+'    push rbp'+$NL+'    mov rbp, rsp'+$NL+'    sub rsp, 64'+$NL+$NL+'    lea rcx, [rip + banner]') ('mainCRTStartup:'+$NL+'    push rbp'+$NL+'    mov rbp, rsp'+$NL+'    sub rsp, 64'+$NL+$NL+'    call configure_args'+$NL+'    jc .die_arg'+$NL+$NL+'    lea rcx, [rip + banner]') 'hook'
 Swap ('.die_wsa:'+$NL+'    lea rcx, [rip + fatal_wsa]') ('.die_arg:'+$NL+'    lea rcx, [rip + fatal_arg]'+$NL+'    mov rdx, fatal_arg_end - fatal_arg'+$NL+'    call die'+$NL+'.die_wsa:'+$NL+'    lea rcx, [rip + fatal_wsa]') 'die arg'
+Swap 'access 200 static' 'access status=200 route=static' 'log static'
+Swap 'access 200 /health' 'access status=200 route=/health' 'log health'
+Swap 'access 400 bad-request' 'access status=400 reason=bad-request' 'log 400'
+Swap 'access 403 forbidden' 'access status=403 reason=forbidden' 'log 403'
+Swap 'access 404 not-found' 'access status=404 reason=not-found' 'log 404'
+Swap 'access 405 method' 'access status=405 reason=method' 'log 405'
+Swap 'access 413 too-large' 'access status=413 reason=too-large' 'log 413'
+Swap 'access 414 uri-too-long' 'access status=414 reason=uri-too-long' 'log 414'
+Swap 'access 500 file-error' 'access status=500 reason=file-error' 'log 500'
 $fn = @'
 # configure_args() parses optional: <port> [127.0.0.1|0.0.0.0]
 configure_args:
