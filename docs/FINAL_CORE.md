@@ -1,12 +1,12 @@
-# DEADWIRE HTTPD v0.2.0 FINAL CORE
+# DEADWIRE HTTPD v0.1.0 INITIAL NATIVE CORE
 
-This document freezes what `FINAL CORE` means for this repo.
+This document defines the public `v0.1.0` baseline after the repository history cleanup.
 
 DEADWIRE is not claiming to be a complete production web server. It is a small native HTTP core with explicit platform ownership.
 
-## Freeze criteria
+## Baseline criteria
 
-A build is considered FINAL CORE when all of this is true:
+A build is considered the initial native core when all of this is true:
 
 - Windows builds `build/deadwire.exe` from `src/deadwire_windows.s`.
 - Linux builds `build/deadwire` from `src/deadwire.s`.
@@ -14,21 +14,22 @@ A build is considered FINAL CORE when all of this is true:
 - `/` serves `public/index.html` as `text/html; charset=utf-8`.
 - `/hello.txt` serves text as `text/plain; charset=utf-8`.
 - `/style.css` serves CSS as `text/css; charset=utf-8`.
-- unsupported methods return `405`.
-- traversal attempts return `403`.
-- missing files return `404`.
-- every response closes the connection intentionally.
+- Unsupported methods return `405`.
+- Traversal attempts return `403`.
+- Missing files return `404`.
+- Every response closes the connection intentionally.
+- Access log lines are emitted for the checked request classes.
 
 ## Non-goals
 
 - TLS.
 - HTTP/2.
-- async runtime.
-- general-purpose CGI or app hosting.
-- automatic directory listing.
-- hidden filesystem behavior.
-- pretending Windows and Linux have the same system boundary.
+- Async runtime.
+- General-purpose CGI or app hosting.
+- Automatic directory listing.
+- Hidden filesystem behavior.
+- Pretending Windows and Linux have the same system boundary.
 
 ## Engineering principle
 
-The server is allowed to be small, but it is not allowed to be vague. Every platform call path must be visible in the source.
+The server is allowed to be small, but it is not allowed to hide what it is doing. Platform boundaries stay visible.

@@ -10,14 +10,14 @@ No HTTP framework. No server library. The platform boundary is explicit:
 ## Current milestone
 
 ```txt
-DEADWIRE HTTPD v0.3.0 ACCESS LOG
+DEADWIRE HTTPD v0.1.0 INITIAL NATIVE CORE
 ```
 
-This milestone keeps the v0.2.x FINAL CORE intact and adds visible daemon behavior: every handled request now emits a tiny access line to stdout.
+This public history starts at a clean initial import. The server already has a small static-file core, MIME headers, path guards, access log lines, and Windows/Linux backends.
 
 The project is still intentionally small. It is not a TLS server, not an async framework, and not an internet-facing hardened daemon yet.
 
-## v0.3.0 scope
+## v0.1.0 scope
 
 DEADWIRE does one narrow job on both Windows and Linux:
 
@@ -48,8 +48,6 @@ access 404 not-found
 
 ## Platform model
 
-The repo has two native assembly backends:
-
 ```txt
 src/deadwire.s           Linux x86-64 backend, raw syscalls
 src/deadwire_windows.s   Windows x86-64 backend, WinSock2 + Kernel32
@@ -71,8 +69,6 @@ Use a Windows x86-64 toolchain that provides:
 - `gcc` for PE/COFF linking
 - PowerShell
 
-Build and verify from PowerShell:
-
 ```powershell
 make clean
 make doctor
@@ -80,15 +76,13 @@ make verify
 make run
 ```
 
-Manual test from another PowerShell or a browser:
+Manual test:
 
 ```powershell
 curl.exe http://127.0.0.1:18080/health
 curl.exe http://127.0.0.1:18080/hello.txt
 curl.exe -I http://127.0.0.1:18080/
 ```
-
-When `make run` works correctly, the terminal stays occupied because the server is running in the foreground and waiting inside `accept`. Stop it with `Ctrl+C`.
 
 ## Linux / WSL2 build
 
@@ -99,46 +93,23 @@ Use Linux x86-64 or WSL2 with:
 - GNU linker: `ld`
 - `curl` for verification
 
-Ubuntu/WSL2 setup:
-
 ```sh
 sudo apt update
 sudo apt install -y build-essential curl
-```
-
-Build and verify:
-
-```sh
 make clean
 make doctor
 make verify
 make run
 ```
 
-Expected startup banner on Linux:
+Expected startup banner:
 
 ```txt
 DEADWIRE HTTPD v0.3.0 ACCESS LOG
-linux x86-64 assembly / raw syscalls / no libc
 listening on http://127.0.0.1:18080
 ```
 
-Expected startup banner on Windows:
-
-```txt
-DEADWIRE HTTPD v0.3.0 ACCESS LOG
-windows x86-64 assembly / WinSock2 + Kernel32 / no HTTP framework
-listening on http://127.0.0.1:18080
-```
-
-Then open:
-
-```txt
-http://127.0.0.1:18080/
-http://127.0.0.1:18080/health
-http://127.0.0.1:18080/hello.txt
-http://127.0.0.1:18080/style.css
-```
+The source banner still reports the pre-rewrite internal milestone. Public release naming starts at `v0.1.0`.
 
 ## Verify
 
@@ -153,8 +124,9 @@ The verification checks:
 - `/hello.txt` returns `Content-Type: text/plain; charset=utf-8`
 - `/style.css` returns `Content-Type: text/css; charset=utf-8`
 - `POST /` returns `405`
-- `/../../etc/passwd` returns `403`
+- traversal attempts return `403`
 - a missing file returns `404`
+- access log lines are emitted for the checked request classes
 
 ## Current limitations
 
@@ -162,7 +134,7 @@ The verification checks:
 - fixed bind address: `127.0.0.1`
 - single-threaded blocking I/O
 - HTTP/1.0 response style
-- access log is intentionally small and status-class based, not full request logging yet
+- access log is intentionally small and status-class based
 - no TLS
 - no keep-alive
 - no chunked encoding
@@ -173,20 +145,18 @@ The verification checks:
 ## Release tags
 
 ```txt
-v0.2.0-final-core  FINAL CORE freeze point
-v0.2.1-raw-page    raw system page patch
+v0.1.0  initial native assembly server
 ```
 
-`v0.3.0` is the next line of development after those tags.
-
-## Roadmap after access log
+## Roadmap
 
 ```txt
-v0.3.1  access log polish if local Windows/Linux verification exposes edge cases
-v0.4.0  command-line port and bind address
-v0.5.0  prefork mode on Linux / worker mode on Windows
-v0.6.0  epoll backend on Linux / IOCP research on Windows
-v1.0.0  stable static-file server after repeated cross-platform verification
+v0.2.0  configurable port
+v0.3.0  configurable bind address
+v0.4.0  structured access log
+v0.5.0  stricter HTTP parser
+v0.6.0  release hardening
+v1.0.0  stable static-file core
 ```
 
 ## Core design
