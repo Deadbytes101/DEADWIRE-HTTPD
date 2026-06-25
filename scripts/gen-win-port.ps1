@@ -7,7 +7,7 @@ $NL = [string][char]10
 $DQ = [string][char]34
 function Swap([string]$a,[string]$b,[string]$n){ if(-not $script:s.Contains($a)){ throw "missing: $n" }; $script:s=$script:s.Replace($a,$b) }
 Swap ".extern CloseHandle`n" ".extern CloseHandle`n.extern GetCommandLineA`n" 'extern'
-Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.4.0 LOG SHAPE' 'banner'
+Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.5.0 HEAD' 'banner'
 Swap 'listening on http://127.0.0.1:18080' 'listening on http://<bind>:<port>' 'listen line'
 Swap 'fatal: bind failed; is port 18080 already in use?' 'fatal: bind failed; address unavailable' 'bind text'
 Swap ('fatal_bind_end:'+$NL+'fatal_listen:') ('fatal_bind_end:'+$NL+'fatal_arg:    .ascii '+$DQ+'fatal: bad arg\r\n'+$DQ+$NL+'fatal_arg_end:'+$NL+'fatal_listen:') 'arg text'
@@ -25,6 +25,84 @@ Swap 'access 405 method' 'access status=405 reason=method' 'log 405'
 Swap 'access 413 too-large' 'access status=413 reason=too-large' 'log 413'
 Swap 'access 414 uri-too-long' 'access status=414 reason=uri-too-long' 'log 414'
 Swap 'access 500 file-error' 'access status=500 reason=file-error' 'log 500'
+Swap 'written_done: .long 0' ('written_done: .long 0'+$NL+'head_request: .long 0') 'head flag'
+$oldMethod = @'
+    lea r10, [rip + request_buf]
+    cmp byte ptr [r10 + 0], 'G'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 1], 'E'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 2], 'T'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 3], ' '
+    jne .method_not_allowed
+
+    lea r10, [rip + request_buf + 4]   # path start
+    mov qword ptr [rbp - 16], r10
+    mov r11, qword ptr [rbp - 8]
+    sub r11, 4
+    mov qword ptr [rbp - 24], r11      # max scan length
+    mov qword ptr [rbp - 32], 0        # path length
+'@
+$newMethod = @'
+    mov dword ptr [rip + head_request], 0
+    lea r10, [rip + request_buf]
+    cmp byte ptr [r10 + 0], 'G'
+    jne .try_head
+    cmp byte ptr [r10 + 1], 'E'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 2], 'T'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 3], ' '
+    jne .method_not_allowed
+    lea r10, [rip + request_buf + 4]
+    jmp .method_ready
+.try_head:
+    cmp byte ptr [r10 + 0], 'H'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 1], 'E'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 2], 'A'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 3], 'D'
+    jne .method_not_allowed
+    cmp byte ptr [r10 + 4], ' '
+    jne .method_not_allowed
+    mov dword ptr [rip + head_request], 1
+    lea r10, [rip + request_buf + 5]
+.method_ready:
+    mov qword ptr [rbp - 16], r10
+    mov r11, qword ptr [rbp - 8]
+    lea rax, [rip + request_buf]
+    mov rcx, r10
+    sub rcx, rax
+    sub r11, rcx
+    mov qword ptr [rbp - 24], r11      # max scan length
+    mov qword ptr [rbp - 32], 0        # path length
+'@
+Swap $oldMethod $newMethod 'head method'
+$oldSendBody = @'
+    mov rcx, qword ptr [rip + current_client]
+    mov rdx, qword ptr [rip + response_body_ptr]
+    mov r8, qword ptr [rip + response_body_len]
+    call send_all
+
+    leave
+    ret
+'@
+$newSendBody = @'
+    cmp dword ptr [rip + head_request], 0
+    jne .response_done
+    mov rcx, qword ptr [rip + current_client]
+    mov rdx, qword ptr [rip + response_body_ptr]
+    mov r8, qword ptr [rip + response_body_len]
+    call send_all
+
+.response_done:
+    leave
+    ret
+'@
+Swap $oldSendBody $newSendBody 'head body skip'
 $fn = @'
 # configure_args() parses optional: <port> [127.0.0.1|0.0.0.0]
 configure_args:
