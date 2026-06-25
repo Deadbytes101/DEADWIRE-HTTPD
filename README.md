@@ -1,30 +1,44 @@
 # DEADWIRE HTTPD
 
-A tiny HTTP/1.0 static file server written in x86-64 assembly.
+A tiny HTTP/1.0 static file server with explicit platform backends.
 
-No HTTP framework. No server library. The platform boundary is explicit:
+No HTTP framework. No server library. No hidden runtime layer.
 
-- Linux backend: raw Linux syscalls
-- Windows backend: WinSock2 + Kernel32 API calls
 <img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/13397280-5830-4526-afaf-4503d32be06c" />
 
 ## Current milestone
 
 ```txt
-DEADWIRE HTTPD v0.9.0 RELEASE POLISH
+DEADWIRE HTTPD v1.0.0 STABLE
 ```
 
-The project has a verified Windows release path for the stable static-file core: default local bind, configurable port, configurable bind address, HEAD support, structured access logs, and explicit bad-argument failure checks.
+The v1.0.0 target is the stable static-file core across Windows, Linux, and macOS.
 
-DEADWIRE is still intentionally small. It is not a TLS server, not an async framework, and not an internet-facing hardened daemon.
+DEADWIRE is intentionally small. It is not a TLS server, not an async framework, and not an internet-facing daemon.
+
+## Platform support
+
+```txt
+Windows -> WinSock2 + Kernel32 backend
+Linux   -> raw Linux syscall backend
+macOS   -> POSIX socket backend
+```
+
+The `Makefile` selects the backend automatically:
+
+```txt
+Windows_NT -> build/deadwire.exe
+Linux      -> build/deadwire
+Darwin     -> build/deadwire
+```
 
 ## Current scope
 
 DEADWIRE does one narrow job:
 
 - bind `127.0.0.1:18080` by default
-- accept an optional port argument on Windows: `deadwire.exe 19090`
-- accept an optional bind argument on Windows: `deadwire.exe 19091 127.0.0.1`
+- accept an optional port argument: `deadwire 19090`
+- accept an optional bind argument: `deadwire 19091 127.0.0.1`
 - accept `0.0.0.0` when explicitly requested
 - accept blocking TCP clients
 - parse `GET <path> HTTP/...`
@@ -34,14 +48,14 @@ DEADWIRE does one narrow job:
 - return `/health`
 - emit explicit `Content-Type` and `Content-Length`
 - detect MIME for `.html`, `.htm`, `.txt`, `.css`, `.js`, and `.svg`
-- print small structured access log lines to stdout
+- print small structured request trace lines to stdout
 - reject unsupported methods with `405`
 - reject path traversal with `403`
 - reject raw `%` paths until percent-decoding exists
 - return missing files with `404`
 - close the connection after every response
 
-Example access log lines:
+Example request trace lines:
 
 ```txt
 access status=200 route=static
@@ -51,25 +65,9 @@ access status=403 reason=forbidden
 access status=404 reason=not-found
 ```
 
-## Platform model
-
-```txt
-src/deadwire.s           Linux x86-64 backend, raw syscalls
-src/deadwire_windows.s   Windows x86-64 backend, WinSock2 + Kernel32
-```
-
-The `Makefile` selects the backend automatically:
-
-```txt
-Windows_NT -> build/deadwire.exe
-Linux      -> build/deadwire
-```
-
-On Windows, the build generates `build/deadwire_windows_port.s` from `src/deadwire_windows.s` before assembling. The generated file adds the current Windows release features while preserving the small assembly core.
-
 ## Windows build
 
-Use a Windows x86-64 toolchain that provides:
+Use a Windows toolchain that provides:
 
 - `make`
 - GNU assembler: `as`
@@ -96,9 +94,9 @@ build\deadwire.exe 19091 127.0.0.1
 curl.exe -I http://127.0.0.1:19091/health
 ```
 
-## Linux / WSL2 build
+## Linux build
 
-Use Linux x86-64 or WSL2 with:
+Use Linux with:
 
 - `make`
 - GNU assembler: `as`
@@ -106,15 +104,28 @@ Use Linux x86-64 or WSL2 with:
 - `curl` for verification
 
 ```sh
-sudo apt update
-sudo apt install -y build-essential curl
 make clean
 make doctor
 make verify
 make run
 ```
 
-The Linux backend remains the compact raw-syscall static server path. The current argument parsing release train is Windows-first.
+## macOS build
+
+Use macOS with:
+
+- `make`
+- C compiler: `cc`
+- `curl` for verification
+
+```sh
+make clean
+make doctor
+make verify
+make run
+```
+
+The macOS backend is intentionally direct POSIX socket code. It exists to make v1.0.0 tri-platform without pretending that Darwin uses the Linux syscall ABI.
 
 ## Verify
 
@@ -122,20 +133,20 @@ The Linux backend remains the compact raw-syscall static server path. The curren
 make verify
 ```
 
-The Windows verification checks:
+Verification checks:
 
 - `/health` returns `deadwire: ok`
 - `/` returns `Content-Type: text/html; charset=utf-8`
 - `/hello.txt` returns `Content-Type: text/plain; charset=utf-8`
 - `/style.css` returns `Content-Type: text/css; charset=utf-8`
-- `HEAD /health` returns headers without a body
+- `HEAD /health` returns headers without a body where that backend supports the v1 request path
 - `POST /` returns `405`
 - traversal attempts return `403`
 - a missing file returns `404`
-- structured access log lines are emitted
-- custom port works on `19090`
-- explicit loopback bind works on `127.0.0.1:19091`
-- explicit any-address bind works on `0.0.0.0:19092`
+- structured request trace lines are emitted
+- custom port works
+- explicit loopback bind works
+- explicit any-address bind works
 - bad argument cases exit with `fatal: bad arg`
 - generated Windows source contains expected release markers
 
@@ -154,7 +165,7 @@ The Windows verification checks:
 ## Release tags
 
 ```txt
-v0.1.0  initial native assembly server
+v0.1.0  initial native server
 v0.2.0  port arg
 v0.3.0  bind arg
 v0.4.0  log shape
@@ -163,12 +174,7 @@ v0.6.0  any bind
 v0.7.0  bad arg verify
 v0.8.0  preflight verify
 v0.9.0  release polish
-```
-
-## Roadmap
-
-```txt
-v1.0.0  stable static-file core
+v1.0.0  stable tri-platform core
 ```
 
 ## Core design
@@ -185,4 +191,10 @@ Windows path:
 WSAStartup -> socket -> setsockopt -> bind -> listen -> accept -> recv -> parse -> CreateFileA -> ReadFile -> send -> closesocket
 ```
 
-That is the point of the project: every platform boundary is explicit.
+macOS path:
+
+```txt
+socket -> setsockopt -> bind -> listen -> accept -> recv -> parse -> fopen -> fread -> send -> close
+```
+
+Every platform boundary is explicit.
