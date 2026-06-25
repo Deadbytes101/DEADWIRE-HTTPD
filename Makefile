@@ -28,8 +28,20 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
+else ifeq ($(UNAME_S),Darwin)
+PLATFORM := darwin
+TARGET := build/deadwire
+SRC := src/deadwire_darwin.c
+CC ?= cc
+LINK_CMD = $(CC) -std=c99 -Wall -Wextra -O2 -o $(TARGET) $(SRC)
+VERIFY_CMD = sh scripts/verify.sh
+VERIFY_PORT_CMD = sh scripts/verify-posix-port.sh 19090
+VERIFY_BIND_CMD = sh scripts/verify-posix-port.sh 19091 127.0.0.1
+VERIFY_ANY_CMD = sh scripts/verify-posix-port.sh 19092 0.0.0.0
+VERIFY_BADARG_CMD = sh scripts/verify-posix-badarg.sh
+VERIFY_PREFLIGHT_CMD = true
 else
-$(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Linux x86-64 and Windows x86-64)
+$(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
 endif
 
@@ -47,12 +59,16 @@ platform:
 
 doctor:
 	@echo "platform: $(PLATFORM)"
-	@command -v $(AS) >/dev/null || { echo "missing: $(AS)" >&2; exit 1; }
 ifeq ($(PLATFORM),windows)
+	@command -v $(AS) >/dev/null || { echo "missing: $(AS)" >&2; exit 1; }
 	@command -v $(CC) >/dev/null || { echo "missing: $(CC)" >&2; exit 1; }
 	@command -v $(POWERSHELL) >/dev/null || { echo "missing: $(POWERSHELL)" >&2; exit 1; }
-else
+else ifeq ($(PLATFORM),linux)
+	@command -v $(AS) >/dev/null || { echo "missing: $(AS)" >&2; exit 1; }
 	@command -v $(LD) >/dev/null || { echo "missing: $(LD)" >&2; exit 1; }
+	@command -v curl >/dev/null || { echo "missing: curl" >&2; exit 1; }
+else ifeq ($(PLATFORM),darwin)
+	@command -v $(CC) >/dev/null || { echo "missing: $(CC)" >&2; exit 1; }
 	@command -v curl >/dev/null || { echo "missing: curl" >&2; exit 1; }
 endif
 	@echo "doctor: ok"
@@ -65,11 +81,16 @@ $(SRC): $(SRC_INPUT) scripts/gen-win-port.ps1 | $(BUILD_DIR)
 	$(GEN_WIN_CMD)
 endif
 
+ifeq ($(PLATFORM),darwin)
+$(TARGET): $(SRC) | $(BUILD_DIR)
+	$(LINK_CMD)
+else
 $(OBJ): $(SRC) | $(BUILD_DIR)
 	$(AS) --64 -o $(OBJ) $(SRC)
 
 $(TARGET): $(OBJ)
 	$(LINK_CMD)
+endif
 
 run: all
 	$(TARGET)
@@ -83,4 +104,8 @@ verify: all
 	$(VERIFY_PREFLIGHT_CMD)
 
 clean:
+ifeq ($(PLATFORM),windows)
 	$(POWERSHELL) -NoProfile -Command "if (Test-Path build) { Remove-Item build -Recurse -Force }"
+else
+	rm -rf $(BUILD_DIR)
+endif
