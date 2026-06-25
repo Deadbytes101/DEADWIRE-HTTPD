@@ -8,11 +8,11 @@ $DQ = [string][char]34
 function Swap([string]$a,[string]$b,[string]$n){ if(-not $script:s.Contains($a)){ throw "missing: $n" }; $script:s=$script:s.Replace($a,$b) }
 function SpliceRange([int]$start,[int]$end,[string]$replacement,[string]$name){ if($start -lt 0 -or $end -lt $start){ throw "missing: $name" }; $script:s = $script:s.Substring(0,$start) + $replacement + $script:s.Substring($end) }
 Swap ".extern CloseHandle`n" ".extern CloseHandle`n.extern GetCommandLineA`n" 'extern'
-Swap 'DEADWIRE HTTPD v0.3.0 ACCESS LOG' 'DEADWIRE HTTPD v0.8.0 PREFLIGHT' 'banner'
+Swap 'DEADWIRE HTTPD CORE' 'DEADWIRE HTTPD v1.0.0 STABLE' 'banner'
 Swap 'listening on http://127.0.0.1:18080' 'listening on http://<bind>:<port>' 'listen line'
 Swap 'fatal: bind failed; is port 18080 already in use?' 'fatal: bind failed; address unavailable' 'bind text'
 Swap ('fatal_bind_end:'+$NL+'fatal_listen:') ('fatal_bind_end:'+$NL+'fatal_arg:    .ascii '+$DQ+'fatal: bad arg\r\n'+$DQ+$NL+'fatal_arg_end:'+$NL+'fatal_listen:') 'arg text'
-Swap ('.section .data'+$NL+'reuse_one: .long 1') 'reuse_one: .long 1' 'data mark'
+if($s.Contains('.section .data'+$NL+'reuse_one: .long 1')){ Swap ('.section .data'+$NL+'reuse_one: .long 1') 'reuse_one: .long 1' 'data mark' }
 Swap ('health_path_end:'+$NL+$NL+'sockaddr_in:') ('health_path_end:'+$NL+$NL+'.section .data'+$NL+'sockaddr_in:') 'sockaddr data'
 Swap '    .word 0xa046              # port 18080 in network byte order' '    .word 0xa046              # default port 18080 in network byte order' 'port comment'
 Swap ('mainCRTStartup:'+$NL+'    push rbp'+$NL+'    mov rbp, rsp'+$NL+'    sub rsp, 64'+$NL+$NL+'    lea rcx, [rip + banner]') ('mainCRTStartup:'+$NL+'    push rbp'+$NL+'    mov rbp, rsp'+$NL+'    sub rsp, 64'+$NL+$NL+'    call configure_args'+$NL+'    jc .die_arg'+$NL+$NL+'    lea rcx, [rip + banner]') 'hook'
