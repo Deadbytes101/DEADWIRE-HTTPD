@@ -13,6 +13,7 @@ VERIFY_PORT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts
 VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19091 -Bind 127.0.0.1
 VERIFY_ANY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19092 -Bind 0.0.0.0
 VERIFY_BADARG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-badarg.ps1
+VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-preflight.ps1
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -26,6 +27,7 @@ VERIFY_PORT_CMD = true
 VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
+VERIFY_PREFLIGHT_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Linux x86-64 and Windows x86-64)
 endif
@@ -78,6 +80,7 @@ verify: all
 	$(VERIFY_BIND_CMD)
 	$(VERIFY_ANY_CMD)
 	$(VERIFY_BADARG_CMD)
+	$(VERIFY_PREFLIGHT_CMD)
 
 clean:
 	$(POWERSHELL) -NoProfile -Command "if (Test-Path build) { Remove-Item build -Recurse -Force }"
