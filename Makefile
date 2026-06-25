@@ -2,11 +2,14 @@ ifeq ($(OS),Windows_NT)
 PLATFORM := windows
 TARGET := build/deadwire.exe
 OBJ := build/deadwire_windows.o
-SRC := src/deadwire_windows.s
+SRC := build/deadwire_windows_port.s
+SRC_INPUT := src/deadwire_windows.s
 CC ?= gcc
 POWERSHELL ?= powershell.exe
 LINK_CMD = $(CC) -nostdlib -Wl,-e,mainCRTStartup -Wl,--subsystem,console -o $(TARGET) $(OBJ) -lws2_32 -lkernel32
+GEN_WIN_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/gen-win-port.ps1
 VERIFY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
+VERIFY_PORT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-port.ps1 -Port 19090
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -16,6 +19,7 @@ OBJ := build/deadwire_linux.o
 SRC := src/deadwire.s
 LINK_CMD = $(LD) -o $(TARGET) $(OBJ)
 VERIFY_CMD = sh scripts/verify.sh
+VERIFY_PORT_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Linux x86-64 and Windows x86-64)
 endif
@@ -48,6 +52,11 @@ endif
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
+ifeq ($(PLATFORM),windows)
+$(SRC): $(SRC_INPUT) scripts/gen-win-port.ps1 | $(BUILD_DIR)
+	$(GEN_WIN_CMD)
+endif
+
 $(OBJ): $(SRC) | $(BUILD_DIR)
 	$(AS) --64 -o $(OBJ) $(SRC)
 
@@ -59,6 +68,7 @@ run: all
 
 verify: all
 	$(VERIFY_CMD)
+	$(VERIFY_PORT_CMD)
 
 clean:
-	rm -rf $(BUILD_DIR)
+	$(POWERSHELL) -NoProfile -Command "if (Test-Path build) { Remove-Item build -Recurse -Force }"
