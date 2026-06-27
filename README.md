@@ -4,8 +4,6 @@ A tiny HTTP/1.0 static file server with explicit platform backends.
 
 No HTTP framework. No server library. No hidden runtime layer.
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/13397280-5830-4526-afaf-4503d32be06c" />
-
 ## Current milestone
 
 ```txt
@@ -64,6 +62,8 @@ access status=405 reason=method
 access status=403 reason=forbidden
 access status=404 reason=not-found
 ```
+
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/13397280-5830-4526-afaf-4503d32be06c" />
 
 ## Architecture pipeline
 
