@@ -65,6 +65,52 @@ access status=403 reason=forbidden
 access status=404 reason=not-found
 ```
 
+## Architecture pipeline
+
+```mermaid
+flowchart TD
+    WIN["Windows: WinSock2 + Kernel32"] --> SOCK["platform socket boundary"]
+    LIN["Linux: raw syscalls"] --> SOCK
+    MAC["macOS: POSIX sockets"] --> SOCK
+
+    CLIENT["TCP client"] --> SOCK
+    SOCK --> ACCEPT["accept one blocking client"]
+    ACCEPT --> REQ["recv/read request buffer"]
+    REQ --> METHOD{"HTTP method"}
+
+    METHOD -->|GET| PATH["path parser"]
+    METHOD -->|HEAD| PATH
+    METHOD -->|other| E405["405 Method Not Allowed"]
+
+    PATH --> GUARD{"path guard"}
+    GUARD -->|raw percent / traversal / backslash| E403["403 Forbidden"]
+    GUARD -->|too long| E414["414 URI Too Long"]
+    GUARD -->|/health| HEALTH["health response body"]
+    GUARD -->|/| INDEX["public/index.html"]
+    GUARD -->|static file| STATIC["public path"]
+
+    INDEX --> OPEN["open file"]
+    STATIC --> OPEN
+    OPEN -->|missing| E404["404 Not Found"]
+    OPEN -->|too large| E413["413 Payload Too Large"]
+    OPEN -->|ok| MIME["MIME detect"]
+
+    HEALTH --> RESP["build HTTP/1.0 response"]
+    MIME --> RESP
+    E405 --> RESP
+    E403 --> RESP
+    E414 --> RESP
+    E404 --> RESP
+    E413 --> RESP
+
+    RESP --> LEN["Content-Type + Content-Length"]
+    LEN --> OUT{"request kind"}
+    OUT -->|GET| SEND["send headers + body"]
+    OUT -->|HEAD| HEADERS["send headers only"]
+    SEND --> CLOSE["close client"]
+    HEADERS --> CLOSE
+```
+
 ## Windows build
 
 Use a Windows toolchain that provides:
