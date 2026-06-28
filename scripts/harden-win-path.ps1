@@ -17,16 +17,15 @@ function Swap([string] $a, [string] $b, [string] $name) {
     $script:s = $script:s.Replace($a, $b)
 }
 
-$forbiddenCharsOld = @'
-    cmp al, '%'
-    je .forbidden
+function Insert-Before([string] $needle, [string] $insert, [string] $name) {
+    $at = $script:s.IndexOf($needle)
+    if ($at -lt 0) {
+        throw "harden-win-path: missing patch point: $name"
+    }
+    $script:s = $script:s.Substring(0, $at) + $insert + $script:s.Substring($at)
+}
 
-    cmp al, '.'
-'@
-
-$forbiddenCharsNew = @'
-    cmp al, '%'
-    je .forbidden
+$forbiddenChars = @'
     cmp al, ':'
     je .forbidden
     cmp al, '*'
@@ -42,10 +41,9 @@ $forbiddenCharsNew = @'
     cmp al, '|'
     je .forbidden
 
-    cmp al, '.'
 '@
 
-Swap $forbiddenCharsOld $forbiddenCharsNew 'win32 forbidden path characters'
+Insert-Before "    cmp al, '.'" $forbiddenChars 'win32 forbidden path characters'
 
 $pathReadyOld = @'
 .path_ready:
