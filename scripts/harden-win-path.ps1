@@ -8,14 +8,6 @@ if (-not (Test-Path $Asm)) {
 }
 
 $s = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
-$NL = [string][char]10
-
-function Swap([string] $a, [string] $b, [string] $name) {
-    if (-not $script:s.Contains($a)) {
-        throw "harden-win-path: missing patch point: $name"
-    }
-    $script:s = $script:s.Replace($a, $b)
-}
 
 function Insert-Before([string] $needle, [string] $insert, [string] $name) {
     $at = $script:s.IndexOf($needle)
@@ -23,6 +15,21 @@ function Insert-Before([string] $needle, [string] $insert, [string] $name) {
         throw "harden-win-path: missing patch point: $name"
     }
     $script:s = $script:s.Substring(0, $at) + $insert + $script:s.Substring($at)
+}
+
+function Insert-After-Scoped([string] $scopeNeedle, [string] $afterNeedle, [string] $insert, [string] $name) {
+    $scopeAt = $script:s.IndexOf($scopeNeedle)
+    if ($scopeAt -lt 0) {
+        throw "harden-win-path: missing patch point: $name scope"
+    }
+
+    $afterAt = $script:s.IndexOf($afterNeedle, $scopeAt)
+    if ($afterAt -lt 0) {
+        throw "harden-win-path: missing patch point: $name anchor"
+    }
+
+    $insertAt = $afterAt + $afterNeedle.Length
+    $script:s = $script:s.Substring(0, $insertAt) + $insert + $script:s.Substring($insertAt)
 }
 
 $forbiddenChars = @'
@@ -45,16 +52,7 @@ $forbiddenChars = @'
 
 Insert-Before "    cmp al, '.'" $forbiddenChars 'win32 forbidden path characters'
 
-$pathReadyOld = @'
-.path_ready:
-    cmp qword ptr [rbp - 32], 0
-    je .bad_request
-'@
-
-$pathReadyNew = @'
-.path_ready:
-    cmp qword ptr [rbp - 32], 0
-    je .bad_request
+$trailingDotGuard = @'
 
     mov r10, qword ptr [rbp - 16]
     mov rax, qword ptr [rbp - 32]
@@ -64,7 +62,7 @@ $pathReadyNew = @'
     je .forbidden
 '@
 
-Swap $pathReadyOld $pathReadyNew 'trailing dot path guard'
+Insert-After-Scoped ".path_ready:" "    je .bad_request`n" $trailingDotGuard 'trailing dot path guard'
 
 [IO.File]::WriteAllText($Asm, $s.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-path: ok'
