@@ -7,6 +7,7 @@ if (-not (Test-Path $Asm)) {
     throw "harden-win-path: missing generated source: $Asm"
 }
 
+$NL = [string][char]10
 $s = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
 
 function Insert-Before([string] $needle, [string] $insert, [string] $name) {
@@ -50,7 +51,7 @@ $forbiddenChars = @'
 
 '@
 
-Insert-Before "    cmp al, '.'" $forbiddenChars 'win32 forbidden path characters'
+Insert-Before "    cmp al, '.'" ($forbiddenChars + $NL) 'win32 forbidden path characters'
 
 $trailingDotGuard = @'
 
@@ -62,7 +63,7 @@ $trailingDotGuard = @'
     je .forbidden
 '@
 
-Insert-After-Scoped ".path_ready:" "    je .bad_request`n" $trailingDotGuard 'trailing dot path guard'
+Insert-After-Scoped ".path_ready:" "    je .bad_request`n" ($trailingDotGuard + $NL) 'trailing dot path guard'
 
 [IO.File]::WriteAllText($Asm, $s.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-path: ok'
