@@ -57,7 +57,8 @@ $trailingDotGuard = @'
     mov r10, qword ptr [rbp - 16]
     mov r11, qword ptr [rbp - 32]
     dec r11
-    cmp byte ptr [r10 + r11], '.'
+    add r10, r11
+    cmp byte ptr [r10], 46
     je .forbidden
 '@
 
