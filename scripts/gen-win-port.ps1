@@ -68,6 +68,46 @@ $methodTail = '    mov qword ptr [rbp - 32], 0        # path length'
 $methodEnd = $s.IndexOf($methodTail, $methodStart)
 if($methodEnd -ge 0){ $methodEnd += $methodTail.Length }
 SpliceRange $methodStart $methodEnd $newMethod 'head method'
+Swap ("    cmp byte ptr [r10], '/'`n    jne .forbidden") ("    cmp byte ptr [r10], '/'`n    jne .bad_request") 'path start classifier'
+$versionCheck = @'
+    mov rax, qword ptr [rbp - 32]
+    add rax, 9
+    cmp rax, qword ptr [rbp - 24]
+    jae .bad_request
+
+    mov r10, qword ptr [rbp - 16]
+    mov rax, qword ptr [rbp - 32]
+    lea r10, [r10 + rax + 1]
+
+    cmp byte ptr [r10 + 0], 'H'
+    jne .bad_request
+    cmp byte ptr [r10 + 1], 'T'
+    jne .bad_request
+    cmp byte ptr [r10 + 2], 'T'
+    jne .bad_request
+    cmp byte ptr [r10 + 3], 'P'
+    jne .bad_request
+    cmp byte ptr [r10 + 4], '/'
+    jne .bad_request
+    cmp byte ptr [r10 + 5], '1'
+    jne .bad_request
+    cmp byte ptr [r10 + 6], '.'
+    jne .bad_request
+    cmp byte ptr [r10 + 7], '0'
+    je .version_ok
+    cmp byte ptr [r10 + 7], '1'
+    jne .bad_request
+.version_ok:
+    mov al, byte ptr [r10 + 8]
+    cmp al, 13
+    je .request_line_ok
+    cmp al, 10
+    je .request_line_ok
+    jmp .bad_request
+.request_line_ok:
+'@
+$pathReady = '.path_ready:'+$NL+'    cmp qword ptr [rbp - 32], 0'+$NL+'    je .bad_request'+$NL
+Swap $pathReady ($pathReady+$versionCheck) 'http version parser'
 $newSendBody = @'
     cmp dword ptr [rip + head_request], 0
     jne .response_done
