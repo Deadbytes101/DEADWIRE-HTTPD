@@ -39,7 +39,7 @@ $forbiddenChars = @'
     je .forbidden
     cmp al, '?'
     je .forbidden
-    cmp al, '"'
+    cmp al, 34
     je .forbidden
     cmp al, '<'
     je .forbidden
@@ -55,10 +55,9 @@ Insert-Before "    cmp al, '.'" $forbiddenChars 'win32 forbidden path characters
 $trailingDotGuard = @'
 
     mov r10, qword ptr [rbp - 16]
-    mov rax, qword ptr [rbp - 32]
-    dec rax
-    mov al, byte ptr [r10 + rax]
-    cmp al, '.'
+    mov r11, qword ptr [rbp - 32]
+    dec r11
+    cmp byte ptr [r10 + r11], '.'
     je .forbidden
 '@
 
