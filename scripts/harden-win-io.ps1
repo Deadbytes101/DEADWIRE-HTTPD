@@ -7,37 +7,33 @@ if (-not (Test-Path $Asm)) {
     throw "harden-win-io: missing generated source: $Asm"
 }
 
+$NL = [string][char]10
 $s = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
 
-function Swap([string] $a, [string] $b, [string] $name) {
-    if (-not $script:s.Contains($a)) {
-        throw "harden-win-io: missing patch point: $name"
+function Insert-After-Scoped([string] $scopeNeedle, [string] $afterNeedle, [string] $insert, [string] $name) {
+    $scopeAt = $script:s.IndexOf($scopeNeedle)
+    if ($scopeAt -lt 0) {
+        throw "harden-win-io: missing patch point: $name scope"
     }
-    $script:s = $script:s.Replace($a, $b)
+
+    $afterAt = $script:s.IndexOf($afterNeedle, $scopeAt)
+    if ($afterAt -lt 0) {
+        throw "harden-win-io: missing patch point: $name anchor"
+    }
+
+    $insertAt = $afterAt + $afterNeedle.Length
+    $script:s = $script:s.Substring(0, $insertAt) + $insert + $script:s.Substring($insertAt)
 }
 
-$readFileOld = @'
-    call ReadFile
-    test eax, eax
-    je .file_error
-
-    mov rcx, qword ptr [rip + current_file]
-'@
-
-$readFileNew = @'
-    call ReadFile
-    test eax, eax
-    je .file_error
+$fullReadCheck = @'
 
     mov eax, dword ptr [rip + bytes_done]
     mov r10, qword ptr [rip + file_size]
     cmp rax, r10
     jne .file_error
-
-    mov rcx, qword ptr [rip + current_file]
 '@
 
-Swap $readFileOld $readFileNew 'full file read check'
+Insert-After-Scoped "    call ReadFile" "    je .file_error`n" ($fullReadCheck + $NL) 'full file read check'
 
 [IO.File]::WriteAllText($Asm, $s.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-io: ok'
