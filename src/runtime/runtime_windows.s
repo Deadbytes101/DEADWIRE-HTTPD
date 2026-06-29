@@ -6,6 +6,10 @@
 # The live implementation remains src/deadwire_windows.s.
 
 .extern send
+.extern GetStdHandle
+.extern WriteFile
+
+.equ STD_OUTPUT_HANDLE, -11
 
 .global dw_runtime_main
 .global dw_runtime_accept_loop
@@ -59,6 +63,24 @@ dw_runtime_send_all:
     leave
     ret
 
-# dw_runtime_write_output maps to write_stdout.
+# dw_runtime_write_output(ptr rcx, length rdx) maps to write_stdout.
 dw_runtime_write_output:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
+    mov qword ptr [rbp - 8], rcx
+    mov qword ptr [rbp - 16], rdx
+
+    mov ecx, STD_OUTPUT_HANDLE
+    call GetStdHandle
+
+    mov rcx, rax
+    mov rdx, qword ptr [rbp - 8]
+    mov r8, qword ptr [rbp - 16]
+    lea r9, [rbp - 20]
+    mov qword ptr [rsp + 32], 0
+    call WriteFile
+
+    leave
     ret
