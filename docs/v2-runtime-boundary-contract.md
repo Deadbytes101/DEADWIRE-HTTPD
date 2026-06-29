@@ -102,12 +102,14 @@ ExitProcess
 
 ## V2.0 Pass Condition
 
-```txt
+```powershell
 make verify
-make verify-runtime-boundary
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-boundary.ps1
 ```
 
-`verify-runtime-boundary` is an architecture guard. It proves that the current single-threaded implementation still exposes the labels and calls that future V2 runtime work must split without changing behavior.
+`verify-runtime-boundary.ps1` is an architecture guard. It proves that the current single-threaded implementation still exposes the labels and calls that future V2 runtime work must split without changing behavior.
+
+A later patch may wire this into `make verify-runtime-boundary` after the Makefile target layout is cleaned up.
 
 ## Not Yet
 
