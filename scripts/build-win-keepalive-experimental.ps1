@@ -20,6 +20,14 @@ if (-not (Test-Path $Source)) {
 $text = Get-Content $Source -Raw
 $text = $text -replace "`r`n", "`n"
 
+$closeHeader = '    .ascii "Connection: close\r\n"'
+$keepAliveHeader = '    .ascii "Connection: keep-alive\r\n"'
+$headerCount = [regex]::Matches($text, [regex]::Escape($closeHeader)).Count
+if ($headerCount -ne 1) {
+    throw "build-win-keepalive-experimental: expected one close connection header, found $headerCount"
+}
+$text = $text.Replace($closeHeader, $keepAliveHeader)
+
 $handleAt = $text.IndexOf('handle_client:')
 if ($handleAt -lt 0) {
     throw 'build-win-keepalive-experimental: missing handle_client label'
@@ -79,4 +87,5 @@ $linkArgs = @(
 if ($LASTEXITCODE -ne 0) { throw 'build-win-keepalive-experimental: link failed' }
 
 Write-Host "build-win-keepalive-experimental: ok $OutExe"
+Write-Host "build-win-keepalive-experimental: connection_header=keep-alive"
 Write-Host "build-win-keepalive-experimental: loop_edges=$edgeCount fallthrough_edges=$fallthroughCount"
