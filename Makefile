@@ -26,6 +26,9 @@ VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File sc
 BENCH_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19100 -Requests 256 -Path /health
 BENCH_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19101 -Requests 256 -Path /
 BENCH_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19102 -Requests 256 -Path /hello.txt
+BENCH_LONG_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19110 -Requests 1024 -Path /health -Rounds 5
+BENCH_LONG_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19111 -Requests 1024 -Path / -Rounds 5
+BENCH_LONG_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19112 -Requests 1024 -Path /hello.txt -Rounds 5
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -49,6 +52,9 @@ VERIFY_PREFLIGHT_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
 BENCH_STATIC_CMD = true
+BENCH_LONG_HEALTH_CMD = true
+BENCH_LONG_INDEX_CMD = true
+BENCH_LONG_STATIC_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -70,6 +76,9 @@ VERIFY_PREFLIGHT_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
 BENCH_STATIC_CMD = true
+BENCH_LONG_HEALTH_CMD = true
+BENCH_LONG_INDEX_CMD = true
+BENCH_LONG_STATIC_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -79,7 +88,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify bench clean doctor platform
+.PHONY: all run verify bench bench-long clean doctor platform
 
 all: $(TARGET)
 
@@ -146,6 +155,11 @@ bench: all
 	$(BENCH_HEALTH_CMD)
 	$(BENCH_INDEX_CMD)
 	$(BENCH_STATIC_CMD)
+
+bench-long: all
+	$(BENCH_LONG_HEALTH_CMD)
+	$(BENCH_LONG_INDEX_CMD)
+	$(BENCH_LONG_STATIC_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
