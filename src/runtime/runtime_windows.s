@@ -30,6 +30,11 @@
 .equ DW_WORKER_OUTPUT_QUEUE_PTR, 16
 .equ DW_WORKER_CURRENT_CLIENT_PTR, 24
 .equ DW_WORKER_PROCESSED_COUNT, 32
+.equ DW_ENTRY_INPUT_QUEUE_PTR, 0
+.equ DW_ENTRY_WORKER_PTR, 8
+.equ DW_ENTRY_OUTPUT_QUEUE_PTR, 16
+.equ DW_ENTRY_CLIENT_PTR, 24
+.equ DW_ENTRY_LAST_RESULT, 32
 
 .section .rdata
 .dw_header_type_prefix:
@@ -63,6 +68,9 @@
 .global dw_runtime_accept_enqueue
 .global dw_runtime_work_step
 .global dw_runtime_output_drain
+.global dw_runtime_accept_entry
+.global dw_runtime_work_entry
+.global dw_runtime_output_entry
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -362,6 +370,99 @@ dw_runtime_output_drain:
     sub rsp, 32
 
     call dw_runtime_queue_pop
+    leave
+    ret
+
+# dw_runtime_accept_entry(entry_context rcx) maps to a raw accept lane entry anchor.
+dw_runtime_accept_entry:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_accept_entry_bad_no_context
+    mov qword ptr [rbp - 8], rcx
+    mov rdx, qword ptr [rcx + DW_ENTRY_CLIENT_PTR]
+    test rdx, rdx
+    je .dw_runtime_accept_entry_bad
+    mov rcx, qword ptr [rcx + DW_ENTRY_INPUT_QUEUE_PTR]
+    test rcx, rcx
+    je .dw_runtime_accept_entry_bad
+    call dw_runtime_accept_enqueue
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_accept_entry_bad:
+    mov eax, 1
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_accept_entry_bad_no_context:
+    mov eax, 1
+    leave
+    ret
+
+# dw_runtime_work_entry(entry_context rcx) maps to a raw work lane entry anchor.
+dw_runtime_work_entry:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_work_entry_bad_no_context
+    mov qword ptr [rbp - 8], rcx
+    mov rcx, qword ptr [rcx + DW_ENTRY_WORKER_PTR]
+    test rcx, rcx
+    je .dw_runtime_work_entry_bad
+    call dw_runtime_work_step
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_work_entry_bad:
+    mov eax, 1
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_work_entry_bad_no_context:
+    mov eax, 1
+    leave
+    ret
+
+# dw_runtime_output_entry(entry_context rcx) maps to a raw output lane entry anchor.
+dw_runtime_output_entry:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_output_entry_empty_no_context
+    mov qword ptr [rbp - 8], rcx
+    mov rcx, qword ptr [rcx + DW_ENTRY_OUTPUT_QUEUE_PTR]
+    test rcx, rcx
+    je .dw_runtime_output_entry_empty
+    call dw_runtime_output_drain
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_output_entry_empty:
+    xor eax, eax
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_ENTRY_LAST_RESULT], rax
+    leave
+    ret
+
+.dw_runtime_output_entry_empty_no_context:
+    xor eax, eax
     leave
     ret
 
