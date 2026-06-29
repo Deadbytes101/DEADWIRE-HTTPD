@@ -12,6 +12,114 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 XXL NATIVE BENCH BASELINE
+
+Native C/WinSock client with 32768 requests per round. This is the longest one-connection-per-request baseline currently recorded.
+
+```txt
+/health
+  rounds:         5
+  requests:       32768
+  median_seconds: 7.888
+  median_rps:     4,154.31
+  median_avg_ms:  0.241
+  min_rps:        3,956.01
+  max_rps:        4,208.15
+  bytes:          3670016
+
+/missing-bench.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 9.346
+  median_rps:     3,506.11
+  median_avg_ms:  0.285
+  min_rps:        3,443.89
+  max_rps:        3,582.14
+  bytes:          3932160
+
+/hello.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 10.318
+  median_rps:     3,175.82
+  median_avg_ms:  0.315
+  min_rps:        3,138.59
+  max_rps:        3,245.77
+  bytes:          3932160
+
+/
+  rounds:         5
+  requests:       32768
+  median_seconds: 10.138
+  median_rps:     3,232.13
+  median_avg_ms:  0.309
+  min_rps:        3,178.28
+  max_rps:        3,332.36
+  bytes:          46071808
+```
+
+XXL NATIVE COST READ:
+
+```txt
+missing_over_health_avg_ms: 0.044
+hello_over_missing_avg_ms: 0.030
+index_over_hello_avg_ms:   -0.006
+```
+
+## V1.2 XL NATIVE BENCH BASELINE
+
+Native C/WinSock client with 16384 requests per round.
+
+```txt
+/health
+  rounds:         5
+  requests:       16384
+  median_seconds: 4.204
+  median_rps:     3,897.65
+  median_avg_ms:  0.257
+  min_rps:        3,844.69
+  max_rps:        3,969.08
+  bytes:          1835008
+
+/missing-bench.txt
+  rounds:         5
+  requests:       16384
+  median_seconds: 4.712
+  median_rps:     3,477.11
+  median_avg_ms:  0.288
+  min_rps:        3,452.09
+  max_rps:        3,600.52
+  bytes:          1966080
+
+/hello.txt
+  rounds:         5
+  requests:       16384
+  median_seconds: 5.003
+  median_rps:     3,274.74
+  median_avg_ms:  0.305
+  min_rps:        3,185.78
+  max_rps:        3,329.48
+  bytes:          1966080
+
+/
+  rounds:         5
+  requests:       16384
+  median_seconds: 5.181
+  median_rps:     3,162.39
+  median_avg_ms:  0.316
+  min_rps:        3,122.42
+  max_rps:        3,180.92
+  bytes:          23035904
+```
+
+XL NATIVE COST READ:
+
+```txt
+missing_over_health_avg_ms: 0.031
+hello_over_missing_avg_ms: 0.017
+index_over_hello_avg_ms:   0.011
+```
+
 ## V1.2 LONG NATIVE BENCH BASELINE
 
 Native C/WinSock client with 4096 requests per round. This is the preferred baseline for optimization decisions because it reduces short-run noise.
@@ -275,4 +383,6 @@ make bench-long
 make bench-cost
 make bench-native
 make bench-native-long
+make bench-native-xl
+make bench-native-xxl
 ```
