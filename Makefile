@@ -23,6 +23,7 @@ VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts
 VERIFY_ANY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19092 -Bind 0.0.0.0
 VERIFY_BADARG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-badarg.ps1
 VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-preflight.ps1
+BENCH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -43,6 +44,7 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
+BENCH_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -61,6 +63,7 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
+BENCH_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -70,7 +73,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify clean doctor platform
+.PHONY: all run verify bench clean doctor platform
 
 all: $(TARGET)
 
@@ -132,6 +135,9 @@ verify: all
 	$(VERIFY_ANY_CMD)
 	$(VERIFY_BADARG_CMD)
 	$(VERIFY_PREFLIGHT_CMD)
+
+bench: all
+	$(BENCH_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
