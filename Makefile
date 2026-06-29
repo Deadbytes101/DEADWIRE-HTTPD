@@ -23,7 +23,9 @@ VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts
 VERIFY_ANY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19092 -Bind 0.0.0.0
 VERIFY_BADARG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-badarg.ps1
 VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-preflight.ps1
-BENCH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1
+BENCH_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19100 -Requests 256 -Path /health
+BENCH_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19101 -Requests 256 -Path /
+BENCH_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19102 -Requests 256 -Path /hello.txt
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -44,7 +46,9 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
-BENCH_CMD = true
+BENCH_HEALTH_CMD = true
+BENCH_INDEX_CMD = true
+BENCH_STATIC_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -63,7 +67,9 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
-BENCH_CMD = true
+BENCH_HEALTH_CMD = true
+BENCH_INDEX_CMD = true
+BENCH_STATIC_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -137,7 +143,9 @@ verify: all
 	$(VERIFY_PREFLIGHT_CMD)
 
 bench: all
-	$(BENCH_CMD)
+	$(BENCH_HEALTH_CMD)
+	$(BENCH_INDEX_CMD)
+	$(BENCH_STATIC_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
