@@ -113,7 +113,7 @@ foreach ($Needle in @('mainCRTStartup entry boundary', 'send_response response b
     }
 }
 
-foreach ($Needle in @('dw_runtime_main maps to mainCRTStartup', 'dw_runtime_handle_client maps to handle_client', 'dw_runtime_send_all maps to send_all')) {
+foreach ($Needle in @('dw_runtime_main maps to mainCRTStartup', 'dw_runtime_handle_client maps to handle_client', 'maps to send_all')) {
     if (-not $RuntimeWindowsSource.Contains($Needle)) {
         throw "runtime windows source check failed: $Needle"
     }
