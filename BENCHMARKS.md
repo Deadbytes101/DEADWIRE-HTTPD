@@ -12,6 +12,60 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 LONG NATIVE BENCH BASELINE
+
+Native C/WinSock client with 4096 requests per round. This is the preferred baseline for optimization decisions because it reduces short-run noise.
+
+```txt
+/health
+  rounds:         5
+  requests:       4096
+  median_seconds: 0.951
+  median_rps:     4,307.01
+  median_avg_ms:  0.232
+  min_rps:        4,029.21
+  max_rps:        4,576.84
+  bytes:          458752
+
+/missing-bench.txt
+  rounds:         5
+  requests:       4096
+  median_seconds: 1.013
+  median_rps:     4,043.81
+  median_avg_ms:  0.247
+  min_rps:        3,929.87
+  max_rps:        4,086.74
+  bytes:          491520
+
+/hello.txt
+  rounds:         5
+  requests:       4096
+  median_seconds: 1.108
+  median_rps:     3,696.29
+  median_avg_ms:  0.271
+  min_rps:        3,358.44
+  max_rps:        3,944.60
+  bytes:          491520
+
+/
+  rounds:         5
+  requests:       4096
+  median_seconds: 1.130
+  median_rps:     3,624.36
+  median_avg_ms:  0.276
+  min_rps:        3,377.82
+  max_rps:        3,925.50
+  bytes:          5758976
+```
+
+LONG NATIVE COST READ:
+
+```txt
+missing_over_health_avg_ms: 0.015
+hello_over_missing_avg_ms: 0.024
+index_over_hello_avg_ms:   0.005
+```
+
 ## V1.2 NATIVE BENCH BASELINE
 
 Native C/WinSock client. This is the preferred optimization baseline over the PowerShell/.NET smoke bench.
@@ -220,4 +274,5 @@ make bench
 make bench-long
 make bench-cost
 make bench-native
+make bench-native-long
 ```
