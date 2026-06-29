@@ -1,10 +1,10 @@
-$ErrorActionPreference = 'Stop'
-
 param(
     [int] $Port = 19100,
     [int] $Requests = 256,
     [string] $Path = '/health'
 )
+
+$ErrorActionPreference = 'Stop'
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $Exe = Join-Path $Root 'build\deadwire.exe'
