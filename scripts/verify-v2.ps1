@@ -19,6 +19,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-request-boundary.ps1
     Check-Status 'verify-runtime-request-boundary'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2-triple-threading.ps1
+    Check-Status 'verify-v2-triple-threading'
+
     make verify
     Check-Status 'make verify'
 
