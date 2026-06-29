@@ -18,6 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-gcc
+
       - name: Verify V2 boundary and server behavior
-        shell: powershell
+        shell: msys2 {0}
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2.ps1
