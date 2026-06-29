@@ -1,0 +1,9 @@
+DEADWIRE V2 RUNTIME BOUNDARY ANCHORS
+
+mainCRTStartup is the current entry boundary.
+handle_client is the current client lifecycle boundary.
+send_response is the current response builder boundary.
+send_all is the current send all boundary.
+write_stdout is the current platform output boundary.
+
+This file is not part of the build yet.
