@@ -60,6 +60,9 @@
 .global dw_runtime_worker_init
 .global dw_runtime_worker_take
 .global dw_runtime_worker_complete
+.global dw_runtime_accept_enqueue
+.global dw_runtime_work_step
+.global dw_runtime_output_drain
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -316,6 +319,49 @@ dw_runtime_worker_complete:
 
 .dw_runtime_worker_complete_bad:
     mov eax, 1
+    leave
+    ret
+
+# dw_runtime_accept_enqueue(input_queue rcx, client rdx) maps to the accept lane handoff boundary.
+dw_runtime_accept_enqueue:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    call dw_runtime_queue_push
+    leave
+    ret
+
+# dw_runtime_work_step(worker rcx) maps to one work lane handoff step.
+dw_runtime_work_step:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_work_step_idle
+    mov qword ptr [rbp - 8], rcx
+    call dw_runtime_worker_take
+    test rax, rax
+    je .dw_runtime_work_step_idle
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, rax
+    call dw_runtime_worker_complete
+    leave
+    ret
+
+.dw_runtime_work_step_idle:
+    mov eax, 1
+    leave
+    ret
+
+# dw_runtime_output_drain(output_queue rcx) maps to one output lane drain boundary.
+dw_runtime_output_drain:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    call dw_runtime_queue_pop
     leave
     ret
 
