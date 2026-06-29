@@ -25,6 +25,11 @@
 .equ DW_QUEUE_TAIL, 8
 .equ DW_QUEUE_CAPACITY, 16
 .equ DW_QUEUE_ITEMS_PTR, 24
+.equ DW_WORKER_ID, 0
+.equ DW_WORKER_INPUT_QUEUE_PTR, 8
+.equ DW_WORKER_OUTPUT_QUEUE_PTR, 16
+.equ DW_WORKER_CURRENT_CLIENT_PTR, 24
+.equ DW_WORKER_PROCESSED_COUNT, 32
 
 .section .rdata
 .dw_header_type_prefix:
@@ -52,6 +57,9 @@
 .global dw_runtime_request_is_get
 .global dw_runtime_queue_push
 .global dw_runtime_queue_pop
+.global dw_runtime_worker_init
+.global dw_runtime_worker_take
+.global dw_runtime_worker_complete
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -235,6 +243,80 @@ dw_runtime_queue_pop:
 
 .dw_runtime_queue_pop_empty:
     xor eax, eax
+    ret
+
+# dw_runtime_worker_init(worker rcx, id rdx, input_queue r8, output_queue r9) maps to the V2 work lane context layout.
+dw_runtime_worker_init:
+    test rcx, rcx
+    je .dw_runtime_worker_init_bad
+    test r8, r8
+    je .dw_runtime_worker_init_bad
+    test r9, r9
+    je .dw_runtime_worker_init_bad
+
+    mov qword ptr [rcx + DW_WORKER_ID], rdx
+    mov qword ptr [rcx + DW_WORKER_INPUT_QUEUE_PTR], r8
+    mov qword ptr [rcx + DW_WORKER_OUTPUT_QUEUE_PTR], r9
+    mov qword ptr [rcx + DW_WORKER_CURRENT_CLIENT_PTR], 0
+    mov qword ptr [rcx + DW_WORKER_PROCESSED_COUNT], 0
+    xor eax, eax
+    ret
+
+.dw_runtime_worker_init_bad:
+    mov eax, 1
+    ret
+
+# dw_runtime_worker_take(worker rcx) pops one client context from the input lane queue.
+dw_runtime_worker_take:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_worker_take_empty
+    mov qword ptr [rbp - 8], rcx
+    mov rcx, qword ptr [rcx + DW_WORKER_INPUT_QUEUE_PTR]
+    test rcx, rcx
+    je .dw_runtime_worker_take_empty
+    call dw_runtime_queue_pop
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_WORKER_CURRENT_CLIENT_PTR], rax
+    leave
+    ret
+
+.dw_runtime_worker_take_empty:
+    xor eax, eax
+    leave
+    ret
+
+# dw_runtime_worker_complete(worker rcx, client rdx) pushes one completed client context to the output lane queue.
+dw_runtime_worker_complete:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 32
+
+    test rcx, rcx
+    je .dw_runtime_worker_complete_bad
+    test rdx, rdx
+    je .dw_runtime_worker_complete_bad
+    mov qword ptr [rbp - 8], rcx
+    mov rcx, qword ptr [rcx + DW_WORKER_OUTPUT_QUEUE_PTR]
+    test rcx, rcx
+    je .dw_runtime_worker_complete_bad
+    call dw_runtime_queue_push
+    test eax, eax
+    jne .dw_runtime_worker_complete_done
+    mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_WORKER_CURRENT_CLIENT_PTR], 0
+    inc qword ptr [r10 + DW_WORKER_PROCESSED_COUNT]
+
+.dw_runtime_worker_complete_done:
+    leave
+    ret
+
+.dw_runtime_worker_complete_bad:
+    mov eax, 1
+    leave
     ret
 
 # dw_runtime_send_response(socket rcx, response rdx) maps to send_response.
