@@ -9,8 +9,9 @@ $RuntimeReadmePath = Join-Path $Root 'src/runtime/README.md'
 $WindowsBackendReadmePath = Join-Path $Root 'src/platform/windows/README.md'
 $RuntimeAnchorPath = Join-Path $Root 'src/runtime/boundary_anchors.txt'
 $AssemblyAnchorPath = Join-Path $Root 'src/runtime/boundary_anchors.asm.txt'
+$RuntimeWindowsSourcePath = Join-Path $Root 'src/runtime/runtime_windows.s'
 
-foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath, $RuntimeAnchorPath, $AssemblyAnchorPath)) {
+foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath, $RuntimeAnchorPath, $AssemblyAnchorPath, $RuntimeWindowsSourcePath)) {
     if (-not (Test-Path $Path)) {
         throw "missing file: $Path"
     }
@@ -24,6 +25,7 @@ $RuntimeReadme = Get-Content -Raw -Encoding UTF8 $RuntimeReadmePath
 $WindowsBackendReadme = Get-Content -Raw -Encoding UTF8 $WindowsBackendReadmePath
 $RuntimeAnchor = Get-Content -Raw -Encoding UTF8 $RuntimeAnchorPath
 $AssemblyAnchor = Get-Content -Raw -Encoding UTF8 $AssemblyAnchorPath
+$RuntimeWindowsSource = Get-Content -Raw -Encoding UTF8 $RuntimeWindowsSourcePath
 
 $AsmNeedles = @(
     'mainCRTStartup:',
@@ -108,6 +110,12 @@ foreach ($Needle in @('mainCRTStartup is the current entry boundary', 'send_resp
 foreach ($Needle in @('mainCRTStartup entry boundary', 'send_response response boundary', 'write_stdout output boundary')) {
     if (-not $AssemblyAnchor.Contains($Needle)) {
         throw "assembly anchor check failed: $Needle"
+    }
+}
+
+foreach ($Needle in @('dw_runtime_main maps to mainCRTStartup', 'dw_runtime_handle_client maps to handle_client', 'dw_runtime_send_all maps to send_all')) {
+    if (-not $RuntimeWindowsSource.Contains($Needle)) {
+        throw "runtime windows source check failed: $Needle"
     }
 }
 
