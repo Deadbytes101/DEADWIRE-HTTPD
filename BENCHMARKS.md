@@ -12,6 +12,30 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 NATIVE LIFECYCLE BENCH BASELINE
+
+Native C/WinSock client using `HEAD /health` with one request per connection. This is the safest lifecycle proxy after pure connect/close hit client-side port/TIME_WAIT limits during long runs.
+
+```txt
+--head-health
+  rounds:         5
+  requests:       16384
+  median_seconds: 3.904
+  median_rps:     4,197.22
+  median_avg_ms:  0.238
+  min_rps:        4,099.87
+  max_rps:        4,395.19
+  bytes:          1622016
+```
+
+LIFECYCLE READ:
+
+```txt
+head_health_avg_ms:     0.238
+get_health_xxl_avg_ms:  0.241
+head_vs_get_health_ms: -0.003
+```
+
 ## V1.2 XXL NATIVE BENCH BASELINE
 
 Native C/WinSock client with 32768 requests per round. This is the longest one-connection-per-request baseline currently recorded.
@@ -385,4 +409,5 @@ make bench-native
 make bench-native-long
 make bench-native-xl
 make bench-native-xxl
+make bench-native-lifecycle
 ```
