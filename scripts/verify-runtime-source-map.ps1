@@ -9,6 +9,22 @@ if (-not (Test-Path $SourcePath)) {
     throw "missing runtime source map: $SourcePath"
 }
 
+$Source = Get-Content -Raw -Encoding UTF8 $SourcePath
+$RequiredSymbols = @(
+    'dw_runtime_main:',
+    'dw_runtime_accept_loop:',
+    'dw_runtime_handle_client:',
+    'dw_runtime_send_response:',
+    'dw_runtime_send_all:',
+    'dw_runtime_write_output:'
+)
+
+foreach ($Symbol in $RequiredSymbols) {
+    if (-not $Source.Contains($Symbol)) {
+        throw "missing runtime anchor symbol: $Symbol"
+    }
+}
+
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
