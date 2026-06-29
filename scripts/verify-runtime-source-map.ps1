@@ -45,8 +45,10 @@ $RequiredClientNeedles = @(
     'DW_CLIENT_RECV_BUFFER_PTR',
     'DW_CLIENT_RECV_BUFFER_CAP',
     'DW_CLIENT_RESPONSE_PTR',
+    '.dw_runtime_handle_client_recv_failed:',
     '.dw_runtime_handle_client_no_response:',
     '.dw_runtime_handle_client_null:',
+    'call dw_runtime_recv_request',
     'call dw_runtime_send_response'
 )
 
@@ -347,6 +349,7 @@ if ($LASTEXITCODE -ne 0) {
 @'
 .intel_syntax noprefix
 .global mainCRTStartup
+.global recv
 .global send
 .extern dw_runtime_handle_client
 .extern ExitProcess
@@ -412,6 +415,12 @@ mainCRTStartup:
     call dw_runtime_handle_client
     test eax, eax
     jne fail
+    cmp byte ptr [rip + recv_buffer + 0], 'G'
+    jne fail
+    cmp byte ptr [rip + recv_buffer + 1], 'E'
+    jne fail
+    cmp byte ptr [rip + recv_buffer + 2], 'T'
+    jne fail
 
     mov rax, qword ptr [rip + capture_len]
     cmp rax, EXPECTED_LEN
@@ -436,6 +445,13 @@ pass:
 fail:
     mov ecx, 1
     call ExitProcess
+
+recv:
+    mov byte ptr [rdx + 0], 'G'
+    mov byte ptr [rdx + 1], 'E'
+    mov byte ptr [rdx + 2], 'T'
+    mov eax, 3
+    ret
 
 send:
     push rbp
@@ -476,7 +492,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness link failed with exit code $LASTEXITCODE"
 }

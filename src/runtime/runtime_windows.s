@@ -72,16 +72,30 @@ dw_runtime_handle_client:
     mov rax, qword ptr [r10 + DW_CLIENT_SOCKET]
     mov qword ptr [rbp - 8], rax
     mov rax, qword ptr [r10 + DW_CLIENT_RECV_BUFFER_PTR]
+    mov qword ptr [rbp - 16], rax
     mov rax, qword ptr [r10 + DW_CLIENT_RECV_BUFFER_CAP]
+    mov qword ptr [rbp - 24], rax
     mov rax, qword ptr [r10 + DW_CLIENT_RESPONSE_PTR]
     test rax, rax
     je .dw_runtime_handle_client_no_response
-    mov qword ptr [rbp - 16], rax
+    mov qword ptr [rbp - 32], rax
 
     mov rcx, qword ptr [rbp - 8]
     mov rdx, qword ptr [rbp - 16]
+    mov r8, qword ptr [rbp - 24]
+    call dw_runtime_recv_request
+    cmp eax, 0
+    jle .dw_runtime_handle_client_recv_failed
+
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [rbp - 32]
     call dw_runtime_send_response
     xor eax, eax
+    leave
+    ret
+
+.dw_runtime_handle_client_recv_failed:
+    mov eax, 3
     leave
     ret
 
