@@ -13,12 +13,11 @@ if (-not (Test-Path $Build)) {
     throw "build-win-keepalive: missing build script: $Build"
 }
 
-$argsList = @('-OutputExe', $Exe)
 if ($SourceAsm) {
-    $argsList += @('-SourceAsm', $SourceAsm)
+    & $Build -SourceAsm $SourceAsm -OutputExe $Exe
+} else {
+    & $Build -OutputExe $Exe
 }
-
-& $Build @argsList
 if ($LASTEXITCODE -ne 0) {
     throw 'build-win-keepalive: build failed'
 }
