@@ -6,10 +6,85 @@ ENVIRONMENT:
 
 ```txt
 PLATFORM: WINDOWS
-BRANCH: work-v1.2-io
+BRANCH: feat/v1.3-keepalive
 MODE: SEQUENTIAL TCP REQUESTS
 ROUNDS PER PATH: 5
-CONNECTION STYLE: ONE REQUEST PER CONNECTION
+DEFAULT CONNECTION STYLE: ONE REQUEST PER CONNECTION
+KEEP-ALIVE FLAVOR STYLE: MANY REQUESTS PER CONNECTION ROUND
+```
+
+## V1.3 NATIVE KEEP-ALIVE STABLE FLAVOR BENCH
+
+Native C/WinSock client with 32768 requests per round against the stable opt-in keep-alive build flavor:
+
+```txt
+build/deadwire_keepalive.exe
+```
+
+This is a connection-reuse benchmark, not a concurrency benchmark. The server remains blocking and single-threaded.
+
+```txt
+/health
+  rounds:         5
+  requests:       32768
+  median_seconds: 4.539
+  median_rps:     7,219.95
+  median_avg_ms:  0.139
+  min_rps:        6,601.44
+  max_rps:        11,050.25
+  bytes:          3833856
+
+/hello.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 5.338
+  median_rps:     6,138.54
+  median_avg_ms:  0.163
+  min_rps:        5,435.69
+  max_rps:        6,326.50
+  bytes:          4096000
+
+/missing-bench.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 4.669
+  median_rps:     7,018.10
+  median_avg_ms:  0.142
+  min_rps:        6,189.75
+  max_rps:        8,028.55
+  bytes:          4096000
+
+/
+  rounds:         5
+  requests:       32768
+  median_seconds: 5.875
+  median_rps:     5,577.20
+  median_avg_ms:  0.179
+  min_rps:        4,671.50
+  max_rps:        6,274.44
+  bytes:          46235648
+```
+
+STABLE KEEP-ALIVE READ AGAINST V1.2 QUIET BASELINE:
+
+```txt
+health_avg_ms_delta:  -0.009
+hello_avg_ms_delta:   -0.037
+missing_avg_ms_delta: -0.030
+index_avg_ms_delta:   -0.011
+
+health_rps_gain:   7.1%
+hello_rps_gain:    22.5%
+missing_rps_gain:  20.4%
+index_rps_gain:    6.1%
+```
+
+COMMANDS:
+
+```txt
+make build-keepalive
+make verify-keepalive
+make bench-native-keepalive
 ```
 
 ## V1.2 NATIVE QUIET BENCH BASELINE
@@ -542,4 +617,7 @@ make bench-native-lifecycle
 make bench-native-nolog
 make build-quiet
 make bench-native-quiet
+make build-keepalive
+make verify-keepalive
+make bench-native-keepalive
 ```
