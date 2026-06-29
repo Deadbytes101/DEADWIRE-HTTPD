@@ -38,4 +38,25 @@ if (-not (Test-Path $ObjectPath)) {
     throw "runtime source map object was not produced: $ObjectPath"
 }
 
+$SymbolLines = & nm -g $ObjectPath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime source map symbol table failed with exit code $LASTEXITCODE"
+}
+
+$SymbolText = $SymbolLines -join "`n"
+$RequiredObjectSymbols = @(
+    'dw_runtime_main',
+    'dw_runtime_accept_loop',
+    'dw_runtime_handle_client',
+    'dw_runtime_send_response',
+    'dw_runtime_send_all',
+    'dw_runtime_write_output'
+)
+
+foreach ($Symbol in $RequiredObjectSymbols) {
+    if (-not $SymbolText.Contains($Symbol)) {
+        throw "missing runtime object symbol: $Symbol"
+    }
+}
+
 Write-Output 'verify-runtime-source-map: ok'
