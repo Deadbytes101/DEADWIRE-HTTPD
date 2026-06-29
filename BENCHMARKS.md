@@ -13,70 +13,130 @@ DEFAULT CONNECTION STYLE: ONE REQUEST PER CONNECTION
 KEEP-ALIVE FLAVOR STYLE: MANY REQUESTS PER CONNECTION ROUND
 ```
 
-## V1.3 NATIVE KEEP-ALIVE STABLE FLAVOR BENCH
+## V1.3 FINAL KEEP-ALIVE GUARDRAIL BENCH
 
-Native C/WinSock client with 32768 requests per round against the stable opt-in keep-alive build flavor:
+Final guardrail run from a clean build directory:
 
 ```txt
-build/deadwire_keepalive.exe
+make clean
+make verify
+make verify-quiet
+make probe-keepalive
+make verify-keepalive
+make bench-native-quiet
+make bench-native-keepalive
+```
+
+Verified build split:
+
+```txt
+build/deadwire.exe                 default close-after-response server
+build/deadwire_accesslog_off.exe   quiet close-after-response server for benchmarks
+build/deadwire_keepalive.exe       stable opt-in keep-alive server flavor
 ```
 
 This is a connection-reuse benchmark, not a concurrency benchmark. The server remains blocking and single-threaded.
+
+Quiet close-after-response median results:
 
 ```txt
 /health
   rounds:         5
   requests:       32768
-  median_seconds: 4.539
-  median_rps:     7,219.95
-  median_avg_ms:  0.139
-  min_rps:        6,601.44
-  max_rps:        11,050.25
+  median_seconds: 5.381
+  median_rps:     6,090.07
+  median_avg_ms:  0.164
+  min_rps:        5,956.38
+  max_rps:        6,461.83
+  bytes:          3670016
+
+/missing-bench.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.267
+  median_rps:     5,228.62
+  median_avg_ms:  0.191
+  min_rps:        5,162.56
+  max_rps:        5,324.97
+  bytes:          3932160
+
+/hello.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 7.278
+  median_rps:     4,502.47
+  median_avg_ms:  0.222
+  min_rps:        4,255.58
+  max_rps:        4,592.22
+  bytes:          3932160
+
+/
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.641
+  median_rps:     4,934.02
+  median_avg_ms:  0.203
+  min_rps:        4,517.01
+  max_rps:        5,000.56
+  bytes:          46071808
+```
+
+Stable keep-alive median results:
+
+```txt
+/health
+  rounds:         5
+  requests:       32768
+  median_seconds: 4.065
+  median_rps:     8,060.76
+  median_avg_ms:  0.124
+  min_rps:        7,091.87
+  max_rps:        8,457.34
   bytes:          3833856
 
 /hello.txt
   rounds:         5
   requests:       32768
-  median_seconds: 5.338
-  median_rps:     6,138.54
-  median_avg_ms:  0.163
-  min_rps:        5,435.69
-  max_rps:        6,326.50
+  median_seconds: 5.914
+  median_rps:     5,540.73
+  median_avg_ms:  0.180
+  min_rps:        4,246.51
+  max_rps:        6,314.65
   bytes:          4096000
 
 /missing-bench.txt
   rounds:         5
   requests:       32768
-  median_seconds: 4.669
-  median_rps:     7,018.10
-  median_avg_ms:  0.142
-  min_rps:        6,189.75
-  max_rps:        8,028.55
+  median_seconds: 5.701
+  median_rps:     5,747.61
+  median_avg_ms:  0.174
+  min_rps:        5,208.83
+  max_rps:        6,745.73
   bytes:          4096000
 
 /
   rounds:         5
   requests:       32768
-  median_seconds: 5.875
-  median_rps:     5,577.20
-  median_avg_ms:  0.179
-  min_rps:        4,671.50
-  max_rps:        6,274.44
+  median_seconds: 6.624
+  median_rps:     4,946.82
+  median_avg_ms:  0.202
+  min_rps:        4,783.23
+  max_rps:        5,657.68
   bytes:          46235648
 ```
 
-STABLE KEEP-ALIVE READ AGAINST V1.2 QUIET BASELINE:
+FINAL SAME-SESSION KEEP-ALIVE READ:
 
 ```txt
-health_avg_ms_delta:  -0.009
-hello_avg_ms_delta:   -0.037
-missing_avg_ms_delta: -0.030
-index_avg_ms_delta:   -0.011
+health_rps_gain:   32.4%
+hello_rps_gain:    23.1%
+missing_rps_gain:  9.9%
+index_rps_gain:    0.3%
 
-health_rps_gain:   7.1%
-hello_rps_gain:    22.5%
-missing_rps_gain:  20.4%
-index_rps_gain:    6.1%
+health_avg_ms_delta:  -0.040
+hello_avg_ms_delta:   -0.042
+missing_avg_ms_delta: -0.017
+index_avg_ms_delta:   -0.001
 ```
 
 COMMANDS:
