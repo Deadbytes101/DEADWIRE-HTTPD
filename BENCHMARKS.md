@@ -12,6 +12,58 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 STATIC COST BASELINE
+
+```txt
+/health
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.322
+  median_rps:     3,182.78
+  median_avg_ms:  0.314
+  min_rps:        2,729.08
+  max_rps:        3,213.10
+  bytes:          114688
+
+/missing-bench.txt
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.369
+  median_rps:     2,775.16
+  median_avg_ms:  0.360
+  min_rps:        2,686.86
+  max_rps:        2,808.04
+  bytes:          122880
+
+/hello.txt
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.396
+  median_rps:     2,588.73
+  median_avg_ms:  0.386
+  min_rps:        2,419.78
+  max_rps:        2,623.85
+  bytes:          122880
+
+/
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.397
+  median_rps:     2,578.22
+  median_avg_ms:  0.388
+  min_rps:        2,337.29
+  max_rps:        2,656.96
+  bytes:          1439744
+```
+
+STATIC COST READ:
+
+```txt
+missing_over_health_avg_ms: 0.046
+hello_over_missing_avg_ms: 0.026
+index_over_hello_avg_ms:   0.002
+```
+
 ## V1.2 I/O DISCIPLINE LONG MEDIAN BASELINE
 
 ```txt
@@ -110,4 +162,5 @@ COMMANDS:
 ```txt
 make bench
 make bench-long
+make bench-cost
 ```
