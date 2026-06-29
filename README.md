@@ -5,8 +5,6 @@
 **TINY HTTP/1.0 STATIC SERVER. RAW BACKENDS. NO FRAMEWORK.**
 
 <p>
-  <img alt="release" src="https://img.shields.io/badge/RELEASE-V1.3.0-blue">
-  <img alt="windows" src="https://img.shields.io/badge/WINDOWS-VERIFIED-brightgreen">
   <img alt="http" src="https://img.shields.io/badge/HTTP-1.0-informational">
   <img alt="asm" src="https://img.shields.io/badge/X86--64-ASSEMBLY-critical">
   <img alt="keep alive" src="https://img.shields.io/badge/KEEP--ALIVE-OPT--IN-orange">
