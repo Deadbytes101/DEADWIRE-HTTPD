@@ -19,9 +19,9 @@ if ($Rounds -lt 1) {
     throw 'bench-native-lifecycle: Rounds must be >= 1'
 }
 
-Write-Host ('native-lifecycle: connect-only requests={0} rounds={1} total_connections={2}' -f $Requests, $Rounds, ($Requests * $Rounds))
+Write-Host ('native-lifecycle: HEAD /health requests={0} rounds={1} total_connections={2}' -f $Requests, $Rounds, ($Requests * $Rounds))
 
-& $BenchNative -Port 19520 -Requests $Requests -Path '--connect-only' -Rounds $Rounds
+& $BenchNative -Port 19520 -Requests $Requests -Path '--head-health' -Rounds $Rounds
 if ($LASTEXITCODE -ne 0) {
     throw 'bench-native-lifecycle: failed'
 }
