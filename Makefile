@@ -11,6 +11,7 @@ GEN_WIN_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/gen
 HARDEN_WIN_PATH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/harden-win-path.ps1
 HARDEN_WIN_IO_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/harden-win-io.ps1
 HARDEN_WIN_REQUEST_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/harden-win-request.ps1
+HARDEN_WIN_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/harden-win-static.ps1
 VERIFY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1
 VERIFY_PARSER_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-parser.ps1
 VERIFY_RESPONSE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-response.ps1
@@ -131,11 +132,12 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 ifeq ($(PLATFORM),windows)
-$(SRC): $(SRC_INPUT) scripts/gen-win-port.ps1 scripts/harden-win-path.ps1 scripts/harden-win-io.ps1 scripts/harden-win-request.ps1 | $(BUILD_DIR)
+$(SRC): $(SRC_INPUT) scripts/gen-win-port.ps1 scripts/harden-win-path.ps1 scripts/harden-win-io.ps1 scripts/harden-win-request.ps1 scripts/harden-win-static.ps1 | $(BUILD_DIR)
 	$(GEN_WIN_CMD)
 	$(HARDEN_WIN_PATH_CMD)
 	$(HARDEN_WIN_IO_CMD)
 	$(HARDEN_WIN_REQUEST_CMD)
+	$(HARDEN_WIN_STATIC_CMD)
 endif
 
 ifeq ($(PLATFORM),darwin)
