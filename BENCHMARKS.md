@@ -1,0 +1,52 @@
+# DEADWIRE HTTPD BENCHMARKS
+
+BASELINE NUMBERS ARE LOCAL SMOKE MEASUREMENTS, NOT FINAL CROSS-MACHINE CLAIMS.
+
+ENVIRONMENT:
+
+```txt
+PLATFORM: WINDOWS
+BRANCH: work-v1.2-io
+MODE: SEQUENTIAL TCP REQUESTS
+REQUESTS PER PATH: 256
+CONNECTION STYLE: ONE REQUEST PER CONNECTION
+```
+
+## V1.2 I/O DISCIPLINE BASELINE
+
+```txt
+/health
+  requests: 256
+  seconds:  0.098
+  rps:      2,622.43
+  avg_ms:   0.381
+  bytes:    28672
+
+/
+  requests: 256
+  seconds:  0.116
+  rps:      2,202.17
+  avg_ms:   0.454
+  bytes:    359936
+
+/hello.txt
+  requests: 256
+  seconds:  0.128
+  rps:      1,996.70
+  avg_ms:   0.501
+  bytes:    30720
+```
+
+READ THIS CORRECTLY:
+
+```txt
+THIS IS NOT A FINAL PUBLIC PERFORMANCE CLAIM.
+THIS IS THE FIRST REPO-TRACKED BASELINE.
+EVERY OPTIMIZATION AFTER THIS MUST BE MEASURED AGAINST IT.
+```
+
+COMMAND:
+
+```sh
+make bench
+```
