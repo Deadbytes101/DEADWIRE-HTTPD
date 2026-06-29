@@ -12,6 +12,75 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 NATIVE QUIET BENCH BASELINE
+
+Native C/WinSock client with 32768 requests per round against an access-log-off generated build. Unlike the no-log diagnostic build, this keeps banner/fatal output and disables only per-request access log call sites.
+
+```txt
+/health
+  rounds:         5
+  requests:       32768
+  median_seconds: 4.863
+  median_rps:     6,738.40
+  median_avg_ms:  0.148
+  min_rps:        6,642.15
+  max_rps:        6,821.07
+  bytes:          3670016
+
+/missing-bench.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 5.621
+  median_rps:     5,829.34
+  median_avg_ms:  0.172
+  min_rps:        5,752.53
+  max_rps:        6,216.90
+  bytes:          3932160
+
+/hello.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.539
+  median_rps:     5,011.23
+  median_avg_ms:  0.200
+  min_rps:        4,868.67
+  max_rps:        5,083.20
+  bytes:          3932160
+
+/
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.236
+  median_rps:     5,254.81
+  median_avg_ms:  0.190
+  min_rps:        5,014.76
+  max_rps:        5,395.44
+  bytes:          46071808
+```
+
+QUIET READ AGAINST XXL:
+
+```txt
+health_saved_avg_ms:  0.093
+missing_saved_avg_ms: 0.113
+hello_saved_avg_ms:   0.115
+index_saved_avg_ms:   0.119
+
+health_rps_gain:  62.2%
+missing_rps_gain: 66.3%
+hello_rps_gain:   57.8%
+index_rps_gain:   62.6%
+```
+
+QUIET VS NO-LOG READ:
+
+```txt
+health_quiet_vs_nolog_avg_ms:  0.000
+missing_quiet_vs_nolog_avg_ms: -0.001
+hello_quiet_vs_nolog_avg_ms:   0.002
+index_quiet_vs_nolog_avg_ms:  -0.008
+```
+
 ## V1.2 NATIVE NO-LOG BENCH BASELINE
 
 Native C/WinSock client with 32768 requests per round against a diagnostic generated build where `write_stdout` is stubbed out. This is not the production binary; it measures access-log cost.
@@ -471,4 +540,6 @@ make bench-native-xl
 make bench-native-xxl
 make bench-native-lifecycle
 make bench-native-nolog
+make build-quiet
+make bench-native-quiet
 ```
