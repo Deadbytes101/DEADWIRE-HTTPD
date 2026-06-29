@@ -28,13 +28,15 @@ function Replace-Once {
 
 $patched = Replace-Once $patched "server_socket: .quad 0`n" "server_socket: .quad 0`nstdout_handle: .quad 0`n" 'stdout handle storage'
 
-$oldGetStdHandleBlock = @'
-    mov ecx, STD_OUTPUT_HANDLE
-    call GetStdHandle
+$writeStdoutAt = $patched.IndexOf('write_stdout:')
+if ($writeStdoutAt -lt 0) {
+    throw 'harden-win-log: missing patch point: write_stdout label'
+}
 
-    mov rcx, rax
-'@
+$prefix = $patched.Substring(0, $writeStdoutAt)
+$tail = $patched.Substring($writeStdoutAt)
 
+$pattern = '(?ms)^[ \t]*mov ecx,\s*(STD_OUTPUT_HANDLE|-11)[ \t]*\n[ \t]*call GetStdHandle[ \t]*\n\s*[ \t]*mov rcx, rax[ \t]*\n'
 $newGetStdHandleBlock = @'
     mov rcx, qword ptr [rip + stdout_handle]
     test rcx, rcx
@@ -47,14 +49,14 @@ $newGetStdHandleBlock = @'
 .stdout_ready:
 '@
 
-$writeStdoutAt = $patched.IndexOf('write_stdout:')
-if ($writeStdoutAt -lt 0) {
-    throw 'harden-win-log: missing patch point: write_stdout label'
+$regex = [regex] $pattern
+$matches = $regex.Matches($tail)
+if ($matches.Count -lt 1) {
+    throw 'harden-win-log: missing patch point: write_stdout cache body'
 }
 
-$tail = $patched.Substring($writeStdoutAt)
-$patchedTail = Replace-Once $tail $oldGetStdHandleBlock $newGetStdHandleBlock 'write_stdout cache body'
-$patched = $patched.Substring(0, $writeStdoutAt) + $patchedTail
+$tail = $regex.Replace($tail, $newGetStdHandleBlock, 1)
+$patched = $prefix + $tail
 
 [IO.File]::WriteAllText($Asm, $patched.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-log: ok'
