@@ -3,7 +3,8 @@ param(
     [int] $Requests = 1024,
     [string] $Path = '/health',
     [int] $Rounds = 5,
-    [string] $ServerExePath = ''
+    [string] $ServerExePath = '',
+    [switch] $KeepAlive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,6 +32,10 @@ if ($Rounds -lt 1) {
     throw 'bench-native: Rounds must be >= 1'
 }
 
+if ($KeepAlive -and $Path -eq '--head-health') {
+    throw 'bench-native: KeepAlive requires a normal GET path'
+}
+
 $cc = if ($env:CC) { $env:CC } else { 'cc' }
 
 & $cc -O2 -std=c99 -Wall -Wextra -o $BenchExe $BenchSrc -lws2_32
@@ -45,7 +50,11 @@ $proc = Start-Process -FilePath $ServerExe -ArgumentList @($Port.ToString()) -Wo
 try {
     $ready = $false
     for ($i = 0; $i -lt 50; $i++) {
-        & $BenchExe 127.0.0.1 $Port /health 1 1 *> $null
+        if ($KeepAlive) {
+            & $BenchExe 127.0.0.1 $Port /health 1 1 --keepalive *> $null
+        } else {
+            & $BenchExe 127.0.0.1 $Port /health 1 1 *> $null
+        }
         if ($LASTEXITCODE -eq 0) {
             $ready = $true
             break
@@ -57,7 +66,11 @@ try {
         throw 'bench-native: server did not become ready'
     }
 
-    & $BenchExe 127.0.0.1 $Port $Path $Requests $Rounds
+    if ($KeepAlive) {
+        & $BenchExe 127.0.0.1 $Port $Path $Requests $Rounds --keepalive
+    } else {
+        & $BenchExe 127.0.0.1 $Port $Path $Requests $Rounds
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "bench-native: native bench failed for path $Path"
     }
