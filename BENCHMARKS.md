@@ -9,10 +9,45 @@ PLATFORM: WINDOWS
 BRANCH: work-v1.2-io
 MODE: SEQUENTIAL TCP REQUESTS
 REQUESTS PER PATH: 256
+ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
-## V1.2 I/O DISCIPLINE BASELINE
+## V1.2 I/O DISCIPLINE MEDIAN BASELINE
+
+```txt
+/health
+  rounds:         5
+  requests:       256
+  median_seconds: 0.075
+  median_rps:     3,427.27
+  median_avg_ms:  0.292
+  min_rps:        2,909.55
+  max_rps:        3,597.74
+  bytes:          28672
+
+/
+  rounds:         5
+  requests:       256
+  median_seconds: 0.098
+  median_rps:     2,613.28
+  median_avg_ms:  0.383
+  min_rps:        2,199.87
+  max_rps:        2,754.70
+  bytes:          359936
+
+/hello.txt
+  rounds:         5
+  requests:       256
+  median_seconds: 0.103
+  median_rps:     2,495.66
+  median_avg_ms:  0.401
+  min_rps:        2,086.24
+  max_rps:        2,653.63
+  bytes:          30720
+```
+
+## PRE-MEDIAN SMOKE BASELINE
 
 ```txt
 /health
