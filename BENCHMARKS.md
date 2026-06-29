@@ -1,6 +1,6 @@
 # DEADWIRE HTTPD BENCHMARKS
 
-BASELINE NUMBERS ARE LOCAL SMOKE MEASUREMENTS, NOT FINAL CROSS-MACHINE CLAIMS.
+LOCAL SMOKE MEASUREMENTS. USE THESE AS REPO BASELINES, NOT UNIVERSAL RESULTS.
 
 ENVIRONMENT:
 
@@ -8,12 +8,45 @@ ENVIRONMENT:
 PLATFORM: WINDOWS
 BRANCH: work-v1.2-io
 MODE: SEQUENTIAL TCP REQUESTS
-REQUESTS PER PATH: 256
 ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
-## V1.2 I/O DISCIPLINE MEDIAN BASELINE
+## V1.2 I/O DISCIPLINE LONG MEDIAN BASELINE
+
+```txt
+/health
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.365
+  median_rps:     2,809.29
+  median_avg_ms:  0.356
+  min_rps:        2,779.73
+  max_rps:        2,925.02
+  bytes:          114688
+
+/
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.407
+  median_rps:     2,517.10
+  median_avg_ms:  0.397
+  min_rps:        2,460.98
+  max_rps:        2,589.17
+  bytes:          1439744
+
+/hello.txt
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.419
+  median_rps:     2,445.05
+  median_avg_ms:  0.409
+  min_rps:        2,338.86
+  max_rps:        2,677.30
+  bytes:          122880
+```
+
+## V1.2 I/O DISCIPLINE SHORT MEDIAN BASELINE
 
 ```txt
 /health
@@ -72,16 +105,9 @@ CONNECTION STYLE: ONE REQUEST PER CONNECTION
   bytes:    30720
 ```
 
-READ THIS CORRECTLY:
+COMMANDS:
 
 ```txt
-THIS IS NOT A FINAL PUBLIC PERFORMANCE CLAIM.
-THIS IS THE FIRST REPO-TRACKED BASELINE.
-EVERY OPTIMIZATION AFTER THIS MUST BE MEASURED AGAINST IT.
-```
-
-COMMAND:
-
-```sh
 make bench
+make bench-long
 ```
