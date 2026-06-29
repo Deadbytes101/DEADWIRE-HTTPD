@@ -4,6 +4,9 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $SourcePath = Join-Path $RepoRoot 'src/runtime/runtime_windows.s'
 $BuildDir = Join-Path $RepoRoot 'build'
 $ObjectPath = Join-Path $BuildDir 'runtime_windows_map.o'
+$DecimalHarnessPath = Join-Path $BuildDir 'verify_runtime_u64dec.s'
+$DecimalHarnessObjectPath = Join-Path $BuildDir 'verify_runtime_u64dec.o'
+$DecimalHarnessExePath = Join-Path $BuildDir 'verify_runtime_u64dec.exe'
 
 if (-not (Test-Path $SourcePath)) {
     throw "missing runtime source map: $SourcePath"
@@ -122,6 +125,62 @@ foreach ($Symbol in $RequiredObjectSymbols) {
     if (-not $SymbolText.Contains($Symbol)) {
         throw "missing runtime object symbol: $Symbol"
     }
+}
+
+@'
+.intel_syntax noprefix
+.global mainCRTStartup
+.extern dw_runtime_u64_to_dec
+.extern ExitProcess
+
+.section .text
+mainCRTStartup:
+    sub rsp, 40
+
+    xor rcx, rcx
+    call dw_runtime_u64_to_dec
+    cmp rdx, 1
+    jne fail
+    cmp byte ptr [rax], '0'
+    jne fail
+
+    mov rcx, 12345
+    call dw_runtime_u64_to_dec
+    cmp rdx, 5
+    jne fail
+    cmp byte ptr [rax + 0], '1'
+    jne fail
+    cmp byte ptr [rax + 1], '2'
+    jne fail
+    cmp byte ptr [rax + 2], '3'
+    jne fail
+    cmp byte ptr [rax + 3], '4'
+    jne fail
+    cmp byte ptr [rax + 4], '5'
+    jne fail
+
+pass:
+    xor ecx, ecx
+    call ExitProcess
+
+fail:
+    mov ecx, 1
+    call ExitProcess
+'@ | Set-Content -Encoding ASCII $DecimalHarnessPath
+
+& as --64 -o $DecimalHarnessObjectPath $DecimalHarnessPath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime decimal harness assembly failed with exit code $LASTEXITCODE"
+}
+
+& gcc -nostdlib -Wl,-e,mainCRTStartup -o $DecimalHarnessExePath $DecimalHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime decimal harness link failed with exit code $LASTEXITCODE"
+}
+
+& $DecimalHarnessExePath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime decimal harness failed with exit code $LASTEXITCODE"
 }
 
 Write-Output 'verify-runtime-source-map: ok'
