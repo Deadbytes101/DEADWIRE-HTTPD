@@ -17,6 +17,7 @@ VERIFY_RESPONSE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scr
 VERIFY_WINPATH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-winpath.ps1
 VERIFY_IO_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-io.ps1
 VERIFY_GENERATED_IO_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-generated-io.ps1
+VERIFY_GENERATED_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-generated-static.ps1
 VERIFY_REQUEST_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-request.ps1
 VERIFY_PORT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-port.ps1 -Port 19090
 VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19091 -Bind 127.0.0.1
@@ -43,6 +44,7 @@ VERIFY_RESPONSE_CMD = true
 VERIFY_WINPATH_CMD = true
 VERIFY_IO_CMD = true
 VERIFY_GENERATED_IO_CMD = true
+VERIFY_GENERATED_STATIC_CMD = true
 VERIFY_REQUEST_CMD = true
 VERIFY_PORT_CMD = true
 VERIFY_BIND_CMD = true
@@ -67,6 +69,7 @@ VERIFY_RESPONSE_CMD = true
 VERIFY_WINPATH_CMD = true
 VERIFY_IO_CMD = true
 VERIFY_GENERATED_IO_CMD = true
+VERIFY_GENERATED_STATIC_CMD = true
 VERIFY_REQUEST_CMD = true
 VERIFY_PORT_CMD = true
 VERIFY_BIND_CMD = true
@@ -144,6 +147,7 @@ verify: all
 	$(VERIFY_WINPATH_CMD)
 	$(VERIFY_IO_CMD)
 	$(VERIFY_GENERATED_IO_CMD)
+	$(VERIFY_GENERATED_STATIC_CMD)
 	$(VERIFY_REQUEST_CMD)
 	$(VERIFY_PORT_CMD)
 	$(VERIFY_BIND_CMD)
