@@ -25,6 +25,23 @@ foreach ($Symbol in $RequiredSymbols) {
     }
 }
 
+$RequiredResponseNeedles = @(
+    '# dw_runtime_send_response(socket rcx, response rdx) maps to send_response.',
+    'DW_RESPONSE_STATUS_PTR',
+    'DW_RESPONSE_BODY_LEN',
+    '.dw_header_type_prefix:',
+    '.dw_header_len_prefix:',
+    '.dw_header_end:',
+    'call dw_runtime_u64_to_dec',
+    'call dw_runtime_send_all'
+)
+
+foreach ($Needle in $RequiredResponseNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime send_response logic: $Needle"
+    }
+}
+
 $RequiredSendAllNeedles = @(
     '# dw_runtime_send_all(socket rcx, buffer rdx, length r8) maps to send_all.',
     '.dw_runtime_send_loop:',
