@@ -59,17 +59,38 @@ dw_runtime_accept_loop:
 # dw_runtime_handle_client maps to handle_client.
 # dw_runtime_handle_client(context rcx) uses the V2 client context ABI.
 dw_runtime_handle_client:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
     test rcx, rcx
     je .dw_runtime_handle_client_null
-    mov rax, qword ptr [rcx + DW_CLIENT_SOCKET]
-    mov rax, qword ptr [rcx + DW_CLIENT_RECV_BUFFER_PTR]
-    mov rax, qword ptr [rcx + DW_CLIENT_RECV_BUFFER_CAP]
-    mov rax, qword ptr [rcx + DW_CLIENT_RESPONSE_PTR]
+
+    mov r10, rcx
+    mov rax, qword ptr [r10 + DW_CLIENT_SOCKET]
+    mov qword ptr [rbp - 8], rax
+    mov rax, qword ptr [r10 + DW_CLIENT_RECV_BUFFER_PTR]
+    mov rax, qword ptr [r10 + DW_CLIENT_RECV_BUFFER_CAP]
+    mov rax, qword ptr [r10 + DW_CLIENT_RESPONSE_PTR]
+    test rax, rax
+    je .dw_runtime_handle_client_no_response
+    mov qword ptr [rbp - 16], rax
+
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [rbp - 16]
+    call dw_runtime_send_response
     xor eax, eax
+    leave
+    ret
+
+.dw_runtime_handle_client_no_response:
+    mov eax, 2
+    leave
     ret
 
 .dw_runtime_handle_client_null:
     mov eax, 1
+    leave
     ret
 
 # dw_runtime_send_response(socket rcx, response rdx) maps to send_response.
