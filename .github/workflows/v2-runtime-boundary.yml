@@ -1,4 +1,4 @@
-name: V2 Runtime Boundary
+name: V2 Full Verify Gate
 
 on:
   push:
@@ -10,14 +10,14 @@ on:
       - main
 
 jobs:
-  verify-runtime-boundary:
-    name: verify-runtime-boundary
+  verify-v2:
+    name: verify-v2
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify V2 runtime boundary
+      - name: Verify V2 boundary and server behavior
         shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-boundary.ps1
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2.ps1
