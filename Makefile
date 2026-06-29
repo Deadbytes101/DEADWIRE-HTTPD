@@ -45,6 +45,7 @@ BENCH_NATIVE_LONG_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -
 BENCH_NATIVE_XL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-xl.ps1 -Requests 16384 -Rounds 5
 BENCH_NATIVE_XXL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-xl.ps1 -Requests 32768 -Rounds 5
 BENCH_NATIVE_LIFECYCLE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-lifecycle.ps1 -Requests 16384 -Rounds 5
+BENCH_NATIVE_NOLOG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-nolog.ps1 -Requests 32768 -Rounds 5
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -87,6 +88,7 @@ BENCH_NATIVE_LONG_INDEX_CMD = true
 BENCH_NATIVE_XL_CMD = true
 BENCH_NATIVE_XXL_CMD = true
 BENCH_NATIVE_LIFECYCLE_CMD = true
+BENCH_NATIVE_NOLOG_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -127,6 +129,7 @@ BENCH_NATIVE_LONG_INDEX_CMD = true
 BENCH_NATIVE_XL_CMD = true
 BENCH_NATIVE_XXL_CMD = true
 BENCH_NATIVE_LIFECYCLE_CMD = true
+BENCH_NATIVE_NOLOG_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -136,7 +139,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle clean doctor platform
+.PHONY: all run verify bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog clean doctor platform
 
 all: $(TARGET)
 
@@ -236,6 +239,9 @@ bench-native-xxl: all
 
 bench-native-lifecycle: all
 	$(BENCH_NATIVE_LIFECYCLE_CMD)
+
+bench-native-nolog: all
+	$(BENCH_NATIVE_NOLOG_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
