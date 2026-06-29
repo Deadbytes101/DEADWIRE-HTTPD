@@ -16,7 +16,8 @@ $RequiredSymbols = @(
     'dw_runtime_handle_client:',
     'dw_runtime_send_response:',
     'dw_runtime_send_all:',
-    'dw_runtime_write_output:'
+    'dw_runtime_write_output:',
+    'dw_runtime_u64_to_dec:'
 )
 
 foreach ($Symbol in $RequiredSymbols) {
@@ -70,6 +71,21 @@ foreach ($Needle in $RequiredWriteOutputNeedles) {
     }
 }
 
+$RequiredDecimalNeedles = @(
+    '# dw_runtime_u64_to_dec(value rcx) -> rax=ptr, rdx=len',
+    '.dw_len_buf_end',
+    'mov byte ptr [r11], ''0''',
+    'mov r10, 10',
+    'div r10',
+    'add dl, ''0'''
+)
+
+foreach ($Needle in $RequiredDecimalNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime decimal logic: $Needle"
+    }
+}
+
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
@@ -96,6 +112,7 @@ $RequiredObjectSymbols = @(
     'dw_runtime_send_response',
     'dw_runtime_send_all',
     'dw_runtime_write_output',
+    'dw_runtime_u64_to_dec',
     'send',
     'GetStdHandle',
     'WriteFile'
