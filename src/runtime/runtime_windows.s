@@ -10,7 +10,32 @@
 .extern WriteFile
 
 .equ STD_OUTPUT_HANDLE, -11
+.equ DW_RESPONSE_STATUS_PTR, 0
+.equ DW_RESPONSE_STATUS_LEN, 8
+.equ DW_RESPONSE_TYPE_PTR, 16
+.equ DW_RESPONSE_TYPE_LEN, 24
+.equ DW_RESPONSE_BODY_PTR, 32
+.equ DW_RESPONSE_BODY_LEN, 40
 
+.section .rdata
+.dw_header_type_prefix:
+    .ascii "Connection: close\r\n"
+    .ascii "Content-Type: "
+.dw_header_type_prefix_end:
+.dw_header_len_prefix:
+    .ascii "\r\nContent-Length: "
+.dw_header_len_prefix_end:
+.dw_header_end:
+    .ascii "\r\n\r\n"
+.dw_header_end_end:
+
+.section .bss
+.align 8
+.dw_len_buf:
+    .skip 32
+.dw_len_buf_end:
+
+.section .text
 .global dw_runtime_main
 .global dw_runtime_accept_loop
 .global dw_runtime_handle_client
@@ -30,8 +55,57 @@ dw_runtime_accept_loop:
 dw_runtime_handle_client:
     ret
 
-# dw_runtime_send_response maps to send_response.
+# dw_runtime_send_response(socket rcx, response rdx) maps to send_response.
 dw_runtime_send_response:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
+    mov qword ptr [rbp - 8], rcx
+    mov qword ptr [rbp - 16], rdx
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [r10 + DW_RESPONSE_STATUS_PTR]
+    mov r8, qword ptr [r10 + DW_RESPONSE_STATUS_LEN]
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_type_prefix]
+    mov r8, .dw_header_type_prefix_end - .dw_header_type_prefix
+    call dw_runtime_send_all
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [r10 + DW_RESPONSE_TYPE_PTR]
+    mov r8, qword ptr [r10 + DW_RESPONSE_TYPE_LEN]
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_len_prefix]
+    mov r8, .dw_header_len_prefix_end - .dw_header_len_prefix
+    call dw_runtime_send_all
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [r10 + DW_RESPONSE_BODY_LEN]
+    call dw_runtime_u64_to_dec
+    mov rcx, qword ptr [rbp - 8]
+    mov r8, rdx
+    mov rdx, rax
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_end]
+    mov r8, .dw_header_end_end - .dw_header_end
+    call dw_runtime_send_all
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [r10 + DW_RESPONSE_BODY_PTR]
+    mov r8, qword ptr [r10 + DW_RESPONSE_BODY_LEN]
+    call dw_runtime_send_all
+
+    leave
     ret
 
 # dw_runtime_send_all(socket rcx, buffer rdx, length r8) maps to send_all.
@@ -83,4 +157,32 @@ dw_runtime_write_output:
     call WriteFile
 
     leave
+    ret
+
+# dw_runtime_u64_to_dec(value rcx) -> rax=ptr, rdx=len
+dw_runtime_u64_to_dec:
+    lea r11, [rip + .dw_len_buf_end]
+    xor r9, r9
+    mov rax, rcx
+    test rax, rax
+    jne .dw_dec_loop
+    dec r11
+    mov byte ptr [r11], '0'
+    mov rax, r11
+    mov edx, 1
+    ret
+
+.dw_dec_loop:
+    mov r10, 10
+.dw_dec_step:
+    xor rdx, rdx
+    div r10
+    dec r11
+    add dl, '0'
+    mov byte ptr [r11], dl
+    inc r9
+    test rax, rax
+    jne .dw_dec_step
+    mov rax, r11
+    mov rdx, r9
     ret
