@@ -12,7 +12,63 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 NATIVE BENCH BASELINE
+
+Native C/WinSock client. This is the preferred optimization baseline over the PowerShell/.NET smoke bench.
+
+```txt
+/health
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.219
+  median_rps:     4,667.46
+  median_avg_ms:  0.214
+  min_rps:        3,983.24
+  max_rps:        4,766.01
+  bytes:          114688
+
+/missing-bench.txt
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.270
+  median_rps:     3,797.99
+  median_avg_ms:  0.263
+  min_rps:        3,135.72
+  max_rps:        4,096.69
+  bytes:          122880
+
+/hello.txt
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.264
+  median_rps:     3,883.08
+  median_avg_ms:  0.258
+  min_rps:        3,483.28
+  max_rps:        3,977.17
+  bytes:          122880
+
+/
+  rounds:         5
+  requests:       1024
+  median_seconds: 0.263
+  median_rps:     3,893.10
+  median_avg_ms:  0.257
+  min_rps:        3,487.96
+  max_rps:        3,918.26
+  bytes:          1439744
+```
+
+NATIVE COST READ:
+
+```txt
+missing_over_health_avg_ms: 0.049
+hello_over_missing_avg_ms: -0.005
+index_over_hello_avg_ms:   -0.001
+```
+
 ## V1.2 STATIC COST BASELINE
+
+PowerShell/.NET smoke client. Kept for historical continuity; use native bench for optimization decisions.
 
 ```txt
 /health
@@ -163,4 +219,5 @@ COMMANDS:
 make bench
 make bench-long
 make bench-cost
+make bench-native
 ```
