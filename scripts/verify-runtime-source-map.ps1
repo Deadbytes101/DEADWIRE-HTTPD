@@ -173,7 +173,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "runtime decimal harness assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib -Wl,-e,mainCRTStartup -o $DecimalHarnessExePath $DecimalHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $DecimalHarnessExePath $DecimalHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "runtime decimal harness link failed with exit code $LASTEXITCODE"
 }
