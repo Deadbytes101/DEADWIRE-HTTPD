@@ -16,6 +16,10 @@
 .equ DW_RESPONSE_TYPE_LEN, 24
 .equ DW_RESPONSE_BODY_PTR, 32
 .equ DW_RESPONSE_BODY_LEN, 40
+.equ DW_CLIENT_SOCKET, 0
+.equ DW_CLIENT_RECV_BUFFER_PTR, 8
+.equ DW_CLIENT_RECV_BUFFER_CAP, 16
+.equ DW_CLIENT_RESPONSE_PTR, 24
 
 .section .rdata
 .dw_header_type_prefix:
@@ -53,7 +57,19 @@ dw_runtime_accept_loop:
     ret
 
 # dw_runtime_handle_client maps to handle_client.
+# dw_runtime_handle_client(context rcx) uses the V2 client context ABI.
 dw_runtime_handle_client:
+    test rcx, rcx
+    je .dw_runtime_handle_client_null
+    mov rax, qword ptr [rcx + DW_CLIENT_SOCKET]
+    mov rax, qword ptr [rcx + DW_CLIENT_RECV_BUFFER_PTR]
+    mov rax, qword ptr [rcx + DW_CLIENT_RECV_BUFFER_CAP]
+    mov rax, qword ptr [rcx + DW_CLIENT_RESPONSE_PTR]
+    xor eax, eax
+    ret
+
+.dw_runtime_handle_client_null:
+    mov eax, 1
     ret
 
 # dw_runtime_send_response(socket rcx, response rdx) maps to send_response.
