@@ -38,6 +38,10 @@ BENCH_NATIVE_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File
 BENCH_NATIVE_MISSING_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19221 -Requests 1024 -Path /missing-bench.txt -Rounds 5
 BENCH_NATIVE_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19222 -Requests 1024 -Path /hello.txt -Rounds 5
 BENCH_NATIVE_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19223 -Requests 1024 -Path / -Rounds 5
+BENCH_NATIVE_LONG_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19320 -Requests 4096 -Path /health -Rounds 5
+BENCH_NATIVE_LONG_MISSING_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19321 -Requests 4096 -Path /missing-bench.txt -Rounds 5
+BENCH_NATIVE_LONG_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19322 -Requests 4096 -Path /hello.txt -Rounds 5
+BENCH_NATIVE_LONG_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -Port 19323 -Requests 4096 -Path / -Rounds 5
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -73,6 +77,10 @@ BENCH_NATIVE_HEALTH_CMD = true
 BENCH_NATIVE_MISSING_CMD = true
 BENCH_NATIVE_STATIC_CMD = true
 BENCH_NATIVE_INDEX_CMD = true
+BENCH_NATIVE_LONG_HEALTH_CMD = true
+BENCH_NATIVE_LONG_MISSING_CMD = true
+BENCH_NATIVE_LONG_STATIC_CMD = true
+BENCH_NATIVE_LONG_INDEX_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -106,6 +114,10 @@ BENCH_NATIVE_HEALTH_CMD = true
 BENCH_NATIVE_MISSING_CMD = true
 BENCH_NATIVE_STATIC_CMD = true
 BENCH_NATIVE_INDEX_CMD = true
+BENCH_NATIVE_LONG_HEALTH_CMD = true
+BENCH_NATIVE_LONG_MISSING_CMD = true
+BENCH_NATIVE_LONG_STATIC_CMD = true
+BENCH_NATIVE_LONG_INDEX_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -115,7 +127,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify bench bench-long bench-cost bench-native clean doctor platform
+.PHONY: all run verify bench bench-long bench-cost bench-native bench-native-long clean doctor platform
 
 all: $(TARGET)
 
@@ -200,6 +212,12 @@ bench-native: all
 	$(BENCH_NATIVE_MISSING_CMD)
 	$(BENCH_NATIVE_STATIC_CMD)
 	$(BENCH_NATIVE_INDEX_CMD)
+
+bench-native-long: all
+	$(BENCH_NATIVE_LONG_HEALTH_CMD)
+	$(BENCH_NATIVE_LONG_MISSING_CMD)
+	$(BENCH_NATIVE_LONG_STATIC_CMD)
+	$(BENCH_NATIVE_LONG_INDEX_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
