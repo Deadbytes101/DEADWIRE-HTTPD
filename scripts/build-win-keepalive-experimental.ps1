@@ -20,14 +20,19 @@ if (-not (Test-Path $Source)) {
 $text = Get-Content $Source -Raw
 $text = $text -replace "`r`n", "`n"
 
-$handleAt = $text.IndexOf("handle_client:")
+$handleAt = $text.IndexOf('handle_client:')
 if ($handleAt -lt 0) {
     throw 'build-win-keepalive-experimental: missing handle_client label'
 }
 
+$sendResponseAt = $text.IndexOf('send_response:', $handleAt)
+if ($sendResponseAt -lt $handleAt) {
+    throw 'build-win-keepalive-experimental: missing send_response label after handle_client'
+}
+
 $setTypeNeedle = "    call set_type_text`n"
 $setTypeAt = $text.IndexOf($setTypeNeedle, $handleAt)
-if ($setTypeAt -lt 0) {
+if ($setTypeAt -lt 0 -or $setTypeAt -gt $sendResponseAt) {
     throw 'build-win-keepalive-experimental: missing handle_client set_type_text call'
 }
 
@@ -37,20 +42,24 @@ if ($text.IndexOf('.request_loop:', $handleAt) -ge 0) {
 }
 $text = $text.Substring(0, $setTypeAt) + $loopLabel + $text.Substring($setTypeAt)
 
-$healthAt = $text.IndexOf(".health:")
-$badRequestAt = $text.IndexOf(".bad_request:", $healthAt)
-if ($healthAt -lt 0 -or $badRequestAt -lt $healthAt) {
-    throw 'build-win-keepalive-experimental: missing health block'
-}
+$sendResponseAt = $text.IndexOf('send_response:', $handleAt)
+$handleBlock = $text.Substring($handleAt, $sendResponseAt - $handleAt)
 
-$healthBlock = $text.Substring($healthAt, $badRequestAt - $healthAt)
-$healthNeedle = "    call send_response`n    jmp .close_client"
-$healthCount = [regex]::Matches($healthBlock, [regex]::Escape($healthNeedle)).Count
-if ($healthCount -ne 1) {
-    throw "build-win-keepalive-experimental: expected one health response close edge, found $healthCount"
+$edgeNeedle = "    call send_response`n    jmp .close_client"
+$edgeCount = [regex]::Matches($handleBlock, [regex]::Escape($edgeNeedle)).Count
+if ($edgeCount -lt 1) {
+    throw 'build-win-keepalive-experimental: no response close edges found'
 }
-$healthBlock = $healthBlock.Replace($healthNeedle, "    call send_response`n    jmp .request_loop")
-$text = $text.Substring(0, $healthAt) + $healthBlock + $text.Substring($badRequestAt)
+$handleBlock = $handleBlock.Replace($edgeNeedle, "    call send_response`n    jmp .request_loop")
+
+$fallthroughNeedle = "    call send_response`n`n.close_client:"
+$fallthroughCount = [regex]::Matches($handleBlock, [regex]::Escape($fallthroughNeedle)).Count
+if ($fallthroughCount -ne 1) {
+    throw "build-win-keepalive-experimental: expected one fallthrough close edge, found $fallthroughCount"
+}
+$handleBlock = $handleBlock.Replace($fallthroughNeedle, "    call send_response`n    jmp .request_loop`n`n.close_client:")
+
+$text = $text.Substring(0, $handleAt) + $handleBlock + $text.Substring($sendResponseAt)
 
 Set-Content -Path $OutAsm -Value ($text -replace "`n", "`r`n") -NoNewline -Encoding ascii
 
@@ -70,3 +79,4 @@ $linkArgs = @(
 if ($LASTEXITCODE -ne 0) { throw 'build-win-keepalive-experimental: link failed' }
 
 Write-Host "build-win-keepalive-experimental: ok $OutExe"
+Write-Host "build-win-keepalive-experimental: loop_edges=$edgeCount fallthrough_edges=$fallthroughCount"
