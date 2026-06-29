@@ -56,7 +56,18 @@ if ($LASTEXITCODE -ne 0) {
     throw 'bench-native-nolog: assemble failed'
 }
 
-& $cc -nostdlib -Wl,-e,mainCRTStartup -Wl,--subsystem,console -o $NoLogExe $NoLogObj -lws2_32 -lkernel32
+$linkArgs = @(
+    '-nostdlib',
+    '-Wl,-e,mainCRTStartup',
+    '-Wl,--subsystem,console',
+    '-o',
+    $NoLogExe,
+    $NoLogObj,
+    '-lws2_32',
+    '-lkernel32'
+)
+
+& $cc @linkArgs
 if ($LASTEXITCODE -ne 0) {
     throw 'bench-native-nolog: link failed'
 }
