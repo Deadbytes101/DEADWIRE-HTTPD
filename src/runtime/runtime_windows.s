@@ -21,6 +21,10 @@
 .equ DW_CLIENT_RECV_BUFFER_PTR, 8
 .equ DW_CLIENT_RECV_BUFFER_CAP, 16
 .equ DW_CLIENT_RESPONSE_PTR, 24
+.equ DW_QUEUE_HEAD, 0
+.equ DW_QUEUE_TAIL, 8
+.equ DW_QUEUE_CAPACITY, 16
+.equ DW_QUEUE_ITEMS_PTR, 24
 
 .section .rdata
 .dw_header_type_prefix:
@@ -46,6 +50,8 @@
 .global dw_runtime_handle_client
 .global dw_runtime_recv_request
 .global dw_runtime_request_is_get
+.global dw_runtime_queue_push
+.global dw_runtime_queue_pop
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -159,6 +165,75 @@ dw_runtime_request_is_get:
     ret
 
 .dw_runtime_request_is_get_no:
+    xor eax, eax
+    ret
+
+# dw_runtime_queue_push(queue rcx, item rdx) maps to the V2 lane handoff queue push boundary.
+dw_runtime_queue_push:
+    test rcx, rcx
+    je .dw_runtime_queue_push_bad
+    test rdx, rdx
+    je .dw_runtime_queue_push_bad
+
+    mov r8, qword ptr [rcx + DW_QUEUE_HEAD]
+    mov r9, qword ptr [rcx + DW_QUEUE_TAIL]
+    mov r10, qword ptr [rcx + DW_QUEUE_CAPACITY]
+    test r10, r10
+    je .dw_runtime_queue_push_bad
+    mov r11, qword ptr [rcx + DW_QUEUE_ITEMS_PTR]
+    test r11, r11
+    je .dw_runtime_queue_push_bad
+
+    mov rax, r9
+    inc rax
+    cmp rax, r10
+    jb .dw_runtime_queue_push_next_ready
+    xor eax, eax
+
+.dw_runtime_queue_push_next_ready:
+    cmp rax, r8
+    je .dw_runtime_queue_push_full
+    mov qword ptr [r11 + r9 * 8], rdx
+    mov qword ptr [rcx + DW_QUEUE_TAIL], rax
+    xor eax, eax
+    ret
+
+.dw_runtime_queue_push_full:
+    mov eax, 2
+    ret
+
+.dw_runtime_queue_push_bad:
+    mov eax, 1
+    ret
+
+# dw_runtime_queue_pop(queue rcx) maps to the V2 lane handoff queue pop boundary.
+dw_runtime_queue_pop:
+    test rcx, rcx
+    je .dw_runtime_queue_pop_empty
+
+    mov r8, qword ptr [rcx + DW_QUEUE_HEAD]
+    mov r9, qword ptr [rcx + DW_QUEUE_TAIL]
+    cmp r8, r9
+    je .dw_runtime_queue_pop_empty
+    mov r10, qword ptr [rcx + DW_QUEUE_CAPACITY]
+    test r10, r10
+    je .dw_runtime_queue_pop_empty
+    mov r11, qword ptr [rcx + DW_QUEUE_ITEMS_PTR]
+    test r11, r11
+    je .dw_runtime_queue_pop_empty
+
+    mov rax, qword ptr [r11 + r8 * 8]
+    mov rdx, r8
+    inc rdx
+    cmp rdx, r10
+    jb .dw_runtime_queue_pop_next_ready
+    xor edx, edx
+
+.dw_runtime_queue_pop_next_ready:
+    mov qword ptr [rcx + DW_QUEUE_HEAD], rdx
+    ret
+
+.dw_runtime_queue_pop_empty:
     xor eax, eax
     ret
 
