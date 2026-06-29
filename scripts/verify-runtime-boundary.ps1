@@ -4,8 +4,11 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $AsmPath = Join-Path $Root 'src/deadwire_windows.s'
 $RoadmapPath = Join-Path $Root 'docs/v2-native-runtime-parity-roadmap.md'
 $ContractPath = Join-Path $Root 'docs/v2-runtime-boundary-contract.md'
+$SourceMapPath = Join-Path $Root 'docs/v2-source-boundary-map.md'
+$RuntimeReadmePath = Join-Path $Root 'src/runtime/README.md'
+$WindowsBackendReadmePath = Join-Path $Root 'src/platform/windows/README.md'
 
-foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath)) {
+foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath)) {
     if (-not (Test-Path $Path)) {
         throw "missing file: $Path"
     }
@@ -14,6 +17,9 @@ foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath)) {
 $Asm = Get-Content -Raw -Encoding UTF8 $AsmPath
 $Roadmap = Get-Content -Raw -Encoding UTF8 $RoadmapPath
 $Contract = Get-Content -Raw -Encoding UTF8 $ContractPath
+$SourceMap = Get-Content -Raw -Encoding UTF8 $SourceMapPath
+$RuntimeReadme = Get-Content -Raw -Encoding UTF8 $RuntimeReadmePath
+$WindowsBackendReadme = Get-Content -Raw -Encoding UTF8 $WindowsBackendReadmePath
 
 $AsmNeedles = @(
     'mainCRTStartup:',
@@ -61,6 +67,31 @@ $ContractNeedles = @(
 foreach ($Needle in $ContractNeedles) {
     if (-not $Contract.Contains($Needle)) {
         throw "contract check failed: $Needle"
+    }
+}
+
+$SourceMapNeedles = @(
+    'src/runtime/',
+    'src/platform/windows/',
+    'NO C SERVER GLUE',
+    'NO THREADS BEFORE BOUNDARY'
+)
+
+foreach ($Needle in $SourceMapNeedles) {
+    if (-not $SourceMap.Contains($Needle)) {
+        throw "source boundary map check failed: $Needle"
+    }
+}
+
+foreach ($Needle in @('Runtime owns', 'NO BEHAVIOR CHANGE WHILE SPLITTING THE BOUNDARY')) {
+    if (-not $RuntimeReadme.Contains($Needle)) {
+        throw "runtime readme check failed: $Needle"
+    }
+}
+
+foreach ($Needle in @('Backend owns', 'DO NOT MIX POLICY WITH PLATFORM PLUMBING')) {
+    if (-not $WindowsBackendReadme.Contains($Needle)) {
+        throw "windows backend readme check failed: $Needle"
     }
 }
 
