@@ -7,8 +7,9 @@ $ContractPath = Join-Path $Root 'docs/v2-runtime-boundary-contract.md'
 $SourceMapPath = Join-Path $Root 'docs/v2-source-boundary-map.md'
 $RuntimeReadmePath = Join-Path $Root 'src/runtime/README.md'
 $WindowsBackendReadmePath = Join-Path $Root 'src/platform/windows/README.md'
+$RuntimeAnchorPath = Join-Path $Root 'src/runtime/boundary_anchors.txt'
 
-foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath)) {
+foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath, $RuntimeAnchorPath)) {
     if (-not (Test-Path $Path)) {
         throw "missing file: $Path"
     }
@@ -20,6 +21,7 @@ $Contract = Get-Content -Raw -Encoding UTF8 $ContractPath
 $SourceMap = Get-Content -Raw -Encoding UTF8 $SourceMapPath
 $RuntimeReadme = Get-Content -Raw -Encoding UTF8 $RuntimeReadmePath
 $WindowsBackendReadme = Get-Content -Raw -Encoding UTF8 $WindowsBackendReadmePath
+$RuntimeAnchor = Get-Content -Raw -Encoding UTF8 $RuntimeAnchorPath
 
 $AsmNeedles = @(
     'mainCRTStartup:',
@@ -92,6 +94,12 @@ foreach ($Needle in @('Runtime owns', 'NO BEHAVIOR CHANGE WHILE SPLITTING THE BO
 foreach ($Needle in @('Backend owns', 'DO NOT MIX POLICY WITH PLATFORM PLUMBING')) {
     if (-not $WindowsBackendReadme.Contains($Needle)) {
         throw "windows backend readme check failed: $Needle"
+    }
+}
+
+foreach ($Needle in @('mainCRTStartup is the current entry boundary', 'send_response is the current response builder boundary', 'write_stdout is the current platform output boundary')) {
+    if (-not $RuntimeAnchor.Contains($Needle)) {
+        throw "runtime anchor check failed: $Needle"
     }
 }
 
