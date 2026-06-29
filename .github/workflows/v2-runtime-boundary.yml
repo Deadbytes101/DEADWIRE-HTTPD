@@ -1,4 +1,4 @@
-name: V2 Runtime Boundary
+name: V2 Full Verify Gate
 
 on:
   push:
@@ -10,14 +10,23 @@ on:
       - main
 
 jobs:
-  verify-runtime-boundary:
-    name: verify-runtime-boundary
+  verify-v2:
+    name: verify-v2
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify V2 runtime boundary
-        shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-boundary.ps1
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-gcc
+
+      - name: Verify V2 boundary and server behavior
+        shell: msys2 {0}
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2.ps1
