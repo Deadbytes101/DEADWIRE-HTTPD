@@ -41,7 +41,9 @@ $RequiredClientNeedles = @(
     'DW_CLIENT_RECV_BUFFER_PTR',
     'DW_CLIENT_RECV_BUFFER_CAP',
     'DW_CLIENT_RESPONSE_PTR',
-    '.dw_runtime_handle_client_null:'
+    '.dw_runtime_handle_client_no_response:',
+    '.dw_runtime_handle_client_null:',
+    'call dw_runtime_send_response'
 )
 
 foreach ($Needle in $RequiredClientNeedles) {
@@ -326,19 +328,52 @@ if ($LASTEXITCODE -ne 0) {
 @'
 .intel_syntax noprefix
 .global mainCRTStartup
+.global send
 .extern dw_runtime_handle_client
 .extern ExitProcess
+
+.equ EXPECTED_LEN, expected_end - expected
 
 .section .data
 recv_buffer:
     .skip 64
-response_ptr:
+status:
+    .ascii "HTTP/1.1 200 OK\r\n"
+status_end:
+ctype:
+    .ascii "text/plain"
+ctype_end:
+body:
+    .ascii "OK"
+body_end:
+client_response:
+    .quad status
+    .quad status_end - status
+    .quad ctype
+    .quad ctype_end - ctype
+    .quad body
+    .quad body_end - body
+client_context_no_response:
+    .quad 7
+    .quad recv_buffer
+    .quad 64
     .quad 0
 client_context:
     .quad 7
     .quad recv_buffer
     .quad 64
-    .quad response_ptr
+    .quad client_response
+expected:
+    .ascii "HTTP/1.1 200 OK\r\n"
+    .ascii "Connection: close\r\n"
+    .ascii "Content-Type: text/plain\r\n"
+    .ascii "Content-Length: 2\r\n\r\n"
+    .ascii "OK"
+expected_end:
+capture:
+    .skip 256
+capture_len:
+    .quad 0
 
 .section .text
 mainCRTStartup:
@@ -349,10 +384,31 @@ mainCRTStartup:
     cmp eax, 1
     jne fail
 
+    lea rcx, [rip + client_context_no_response]
+    call dw_runtime_handle_client
+    cmp eax, 2
+    jne fail
+
     lea rcx, [rip + client_context]
     call dw_runtime_handle_client
     test eax, eax
     jne fail
+
+    mov rax, qword ptr [rip + capture_len]
+    cmp rax, EXPECTED_LEN
+    jne fail
+
+    lea rsi, [rip + capture]
+    lea rdi, [rip + expected]
+    mov rcx, EXPECTED_LEN
+compare_loop:
+    mov al, byte ptr [rsi]
+    cmp al, byte ptr [rdi]
+    jne fail
+    inc rsi
+    inc rdi
+    dec rcx
+    jne compare_loop
 
 pass:
     xor ecx, ecx
@@ -361,6 +417,39 @@ pass:
 fail:
     mov ecx, 1
     call ExitProcess
+
+send:
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push rsi
+    push rdi
+
+    mov rbx, r8
+    lea rdi, [rip + capture]
+    add rdi, qword ptr [rip + capture_len]
+    mov rsi, rdx
+    mov rcx, r8
+    test rcx, rcx
+    je send_done
+
+send_copy:
+    mov al, byte ptr [rsi]
+    mov byte ptr [rdi], al
+    inc rsi
+    inc rdi
+    dec rcx
+    jne send_copy
+
+send_done:
+    add qword ptr [rip + capture_len], rbx
+    mov rax, rbx
+
+    pop rdi
+    pop rsi
+    pop rbx
+    pop rbp
+    ret
 '@ | Set-Content -Encoding ASCII $ClientHarnessPath
 
 & as --64 -o $ClientHarnessObjectPath $ClientHarnessPath
@@ -368,7 +457,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness link failed with exit code $LASTEXITCODE"
 }
