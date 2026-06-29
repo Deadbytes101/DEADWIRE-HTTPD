@@ -24,6 +24,7 @@ VERIFY_BIND_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts
 VERIFY_ANY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-bind.ps1 -Port 19092 -Bind 0.0.0.0
 VERIFY_BADARG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-badarg.ps1
 VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-preflight.ps1
+VERIFY_QUIET_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-quiet.ps1 -Port 19093
 BENCH_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19100 -Requests 256 -Path /health
 BENCH_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19101 -Requests 256 -Path /
 BENCH_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19102 -Requests 256 -Path /hello.txt
@@ -69,6 +70,7 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
+VERIFY_QUIET_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
 BENCH_STATIC_CMD = true
@@ -112,6 +114,7 @@ VERIFY_BIND_CMD = true
 VERIFY_ANY_CMD = true
 VERIFY_BADARG_CMD = true
 VERIFY_PREFLIGHT_CMD = true
+VERIFY_QUIET_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
 BENCH_STATIC_CMD = true
@@ -145,7 +148,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet clean doctor platform
+.PHONY: all run verify verify-quiet bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet clean doctor platform
 
 all: $(TARGET)
 
@@ -208,6 +211,9 @@ verify: all
 	$(VERIFY_ANY_CMD)
 	$(VERIFY_BADARG_CMD)
 	$(VERIFY_PREFLIGHT_CMD)
+
+verify-quiet: all
+	$(VERIFY_QUIET_CMD)
 
 bench: all
 	$(BENCH_HEALTH_CMD)
