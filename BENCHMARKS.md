@@ -12,6 +12,66 @@ ROUNDS PER PATH: 5
 CONNECTION STYLE: ONE REQUEST PER CONNECTION
 ```
 
+## V1.2 NATIVE NO-LOG BENCH BASELINE
+
+Native C/WinSock client with 32768 requests per round against a diagnostic generated build where `write_stdout` is stubbed out. This is not the production binary; it measures access-log cost.
+
+```txt
+/health
+  rounds:         5
+  requests:       32768
+  median_seconds: 4.865
+  median_rps:     6,735.41
+  median_avg_ms:  0.148
+  min_rps:        6,496.27
+  max_rps:        7,005.95
+  bytes:          3670016
+
+/missing-bench.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 5.667
+  median_rps:     5,782.70
+  median_avg_ms:  0.173
+  min_rps:        5,647.10
+  max_rps:        5,971.46
+  bytes:          3932160
+
+/hello.txt
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.488
+  median_rps:     5,050.39
+  median_avg_ms:  0.198
+  min_rps:        4,875.73
+  max_rps:        5,213.61
+  bytes:          3932160
+
+/
+  rounds:         5
+  requests:       32768
+  median_seconds: 6.504
+  median_rps:     5,038.20
+  median_avg_ms:  0.198
+  min_rps:        4,745.95
+  max_rps:        5,327.73
+  bytes:          46071808
+```
+
+NO-LOG READ AGAINST XXL:
+
+```txt
+health_saved_avg_ms:  0.093
+missing_saved_avg_ms: 0.112
+hello_saved_avg_ms:   0.117
+index_saved_avg_ms:   0.111
+
+health_rps_gain:  62.1%
+missing_rps_gain: 65.0%
+hello_rps_gain:   59.0%
+index_rps_gain:   55.9%
+```
+
 ## V1.2 NATIVE LIFECYCLE BENCH BASELINE
 
 Native C/WinSock client using `HEAD /health` with one request per connection. This is the safest lifecycle proxy after pure connect/close hit client-side port/TIME_WAIT limits during long runs.
@@ -410,4 +470,5 @@ make bench-native-long
 make bench-native-xl
 make bench-native-xxl
 make bench-native-lifecycle
+make bench-native-nolog
 ```
