@@ -56,8 +56,8 @@ dw_runtime_main:
 dw_runtime_accept_loop:
     ret
 
-# dw_runtime_handle_client(context rcx) maps to handle_client.
-# V2 client context ABI anchor.
+# dw_runtime_handle_client maps to handle_client.
+# dw_runtime_handle_client(context rcx) uses the V2 client context ABI.
 dw_runtime_handle_client:
     test rcx, rcx
     je .dw_runtime_handle_client_null
