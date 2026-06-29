@@ -10,6 +10,9 @@ $DecimalHarnessExePath = Join-Path $BuildDir 'verify_runtime_u64dec.exe'
 $ResponseHarnessPath = Join-Path $BuildDir 'verify_runtime_response.s'
 $ResponseHarnessObjectPath = Join-Path $BuildDir 'verify_runtime_response.o'
 $ResponseHarnessExePath = Join-Path $BuildDir 'verify_runtime_response.exe'
+$ClientHarnessPath = Join-Path $BuildDir 'verify_runtime_client.s'
+$ClientHarnessObjectPath = Join-Path $BuildDir 'verify_runtime_client.o'
+$ClientHarnessExePath = Join-Path $BuildDir 'verify_runtime_client.exe'
 
 if (-not (Test-Path $SourcePath)) {
     throw "missing runtime source map: $SourcePath"
@@ -29,6 +32,21 @@ $RequiredSymbols = @(
 foreach ($Symbol in $RequiredSymbols) {
     if (-not $Source.Contains($Symbol)) {
         throw "missing runtime anchor symbol: $Symbol"
+    }
+}
+
+$RequiredClientNeedles = @(
+    '# dw_runtime_handle_client maps to handle_client.',
+    'DW_CLIENT_SOCKET',
+    'DW_CLIENT_RECV_BUFFER_PTR',
+    'DW_CLIENT_RECV_BUFFER_CAP',
+    'DW_CLIENT_RESPONSE_PTR',
+    '.dw_runtime_handle_client_null:'
+)
+
+foreach ($Needle in $RequiredClientNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime client ABI logic: $Needle"
     }
 }
 
@@ -303,6 +321,61 @@ if ($LASTEXITCODE -ne 0) {
 & $ResponseHarnessExePath
 if ($LASTEXITCODE -ne 0) {
     throw "runtime response harness failed with exit code $LASTEXITCODE"
+}
+
+@'
+.intel_syntax noprefix
+.global mainCRTStartup
+.extern dw_runtime_handle_client
+.extern ExitProcess
+
+.section .data
+recv_buffer:
+    .skip 64
+response_ptr:
+    .quad 0
+client_context:
+    .quad 7
+    .quad recv_buffer
+    .quad 64
+    .quad response_ptr
+
+.section .text
+mainCRTStartup:
+    sub rsp, 40
+
+    xor rcx, rcx
+    call dw_runtime_handle_client
+    cmp eax, 1
+    jne fail
+
+    lea rcx, [rip + client_context]
+    call dw_runtime_handle_client
+    test eax, eax
+    jne fail
+
+pass:
+    xor ecx, ecx
+    call ExitProcess
+
+fail:
+    mov ecx, 1
+    call ExitProcess
+'@ | Set-Content -Encoding ASCII $ClientHarnessPath
+
+& as --64 -o $ClientHarnessObjectPath $ClientHarnessPath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime client harness assembly failed with exit code $LASTEXITCODE"
+}
+
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime client harness link failed with exit code $LASTEXITCODE"
+}
+
+& $ClientHarnessExePath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime client harness failed with exit code $LASTEXITCODE"
 }
 
 Write-Output 'verify-runtime-source-map: ok'
