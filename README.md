@@ -75,6 +75,28 @@ verify-badarg
 verify-preflight
 ```
 
+## Windows quiet build
+
+The normal Windows binary keeps per-request access logs enabled. For benchmark or local production-style use, build the quiet binary that disables only access-log write sites while keeping banner and fatal output intact.
+
+```sh
+make build-quiet
+build/deadwire_accesslog_off.exe 18080
+```
+
+Benchmarks for the quiet build are tracked in `BENCHMARKS.md`.
+
+## Windows native benches
+
+```sh
+make bench-native
+make bench-native-long
+make bench-native-xl
+make bench-native-xxl
+make bench-native-lifecycle
+make bench-native-quiet
+```
+
 ## Limits
 
 ```txt
