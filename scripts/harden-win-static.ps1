@@ -8,42 +8,59 @@ if (-not (Test-Path $Asm)) {
 }
 
 $NL = [string][char]10
-$s = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
+$original = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
+$patched = $original
 
-function Insert-After-Scoped([string] $scopeNeedle, [string] $afterNeedle, [string] $insert, [string] $name) {
-    $scopeAt = $script:s.IndexOf($scopeNeedle)
+function Insert-After-Scoped {
+    param(
+        [string] $Text,
+        [string] $ScopeNeedle,
+        [string] $AfterNeedle,
+        [string] $Insert,
+        [string] $Name
+    )
+
+    $scopeAt = $Text.IndexOf($ScopeNeedle)
     if ($scopeAt -lt 0) {
-        throw "harden-win-static: missing patch point: $name scope"
+        throw "harden-win-static: missing patch point: $Name scope"
     }
 
-    $afterAt = $script:s.IndexOf($afterNeedle, $scopeAt)
+    $afterAt = $Text.IndexOf($AfterNeedle, $scopeAt)
     if ($afterAt -lt 0) {
-        throw "harden-win-static: missing patch point: $name anchor"
+        throw "harden-win-static: missing patch point: $Name anchor"
     }
 
-    $insertAt = $afterAt + $afterNeedle.Length
-    $script:s = $script:s.Substring(0, $insertAt) + $insert + $script:s.Substring($insertAt)
+    $insertAt = $afterAt + $AfterNeedle.Length
+    return $Text.Substring(0, $insertAt) + $Insert + $Text.Substring($insertAt)
 }
 
-function Replace-Scoped([string] $scopeNeedle, [string] $old, [string] $new, [string] $name) {
-    $scopeAt = $script:s.IndexOf($scopeNeedle)
+function Replace-Scoped {
+    param(
+        [string] $Text,
+        [string] $ScopeNeedle,
+        [string] $Old,
+        [string] $New,
+        [string] $Name
+    )
+
+    $scopeAt = $Text.IndexOf($ScopeNeedle)
     if ($scopeAt -lt 0) {
-        throw "harden-win-static: missing patch point: $name scope"
+        throw "harden-win-static: missing patch point: $Name scope"
     }
 
-    $oldAt = $script:s.IndexOf($old, $scopeAt)
+    $oldAt = $Text.IndexOf($Old, $scopeAt)
     if ($oldAt -lt 0) {
-        throw "harden-win-static: missing patch point: $name anchor"
+        throw "harden-win-static: missing patch point: $Name anchor"
     }
 
-    $script:s = $script:s.Substring(0, $oldAt) + $new + $script:s.Substring($oldAt + $old.Length)
+    return $Text.Substring(0, $oldAt) + $New + $Text.Substring($oldAt + $Old.Length)
 }
 
 $initStaticTypeFast = @'
     mov qword ptr [rbp - 40], 0
 '@
 
-Insert-After-Scoped 'handle_client:' "    call set_type_text`n" ($initStaticTypeFast + $NL) 'static fast flag init'
+$patched = Insert-After-Scoped $patched 'handle_client:' "    call set_type_text`n" ($initStaticTypeFast + $NL) 'static fast flag init'
 
 $indexJumpOld = @'
     jmp .serve_file
@@ -54,25 +71,23 @@ $indexJumpNew = @'
     jmp .serve_file
 '@
 
-Replace-Scoped '.copy_index:' $indexJumpOld $indexJumpNew 'index html fast flag'
+$patched = Replace-Scoped $patched '.copy_index:' $indexJumpOld $indexJumpNew 'index html fast flag'
 
-$detectOld = @'
-    lea rcx, [rip + path_buf]
+$detectCallOld = @'
     call detect_content_type
 '@
 
-$detectNew = @'
+$detectCallNew = @'
     cmp qword ptr [rbp - 40], 1
     jne .static_dynamic_content_type
     call set_type_html
     jmp .static_content_type_done
 .static_dynamic_content_type:
-    lea rcx, [rip + path_buf]
     call detect_content_type
 .static_content_type_done:
 '@
 
-Replace-Scoped '.serve_file:' $detectOld $detectNew 'static content type fast path'
+$patched = Replace-Scoped $patched '.serve_file:' $detectCallOld $detectCallNew 'static content type fast path'
 
-[IO.File]::WriteAllText($Asm, $s.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText($Asm, $patched.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-static: ok'
