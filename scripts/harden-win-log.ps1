@@ -7,59 +7,35 @@ if (-not (Test-Path $Asm)) {
     throw "harden-win-log: missing generated source: $Asm"
 }
 
-$s = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
+$original = [IO.File]::ReadAllText($Asm).Replace("`r`n", "`n")
+$patched = $original
 
 function Replace-Once {
     param(
+        [string] $Text,
         [string] $Old,
         [string] $New,
         [string] $Name
     )
 
-    $at = $script:s.IndexOf($Old)
+    $at = $Text.IndexOf($Old)
     if ($at -lt 0) {
         throw "harden-win-log: missing patch point: $Name"
     }
 
-    $script:s = $script:s.Substring(0, $at) + $New + $script:s.Substring($at + $Old.Length)
+    return $Text.Substring(0, $at) + $New + $Text.Substring($at + $Old.Length)
 }
 
-Replace-Once "server_socket: .quad 0`n" "server_socket: .quad 0`nstdout_handle: .quad 0`n" 'stdout handle storage'
+$patched = Replace-Once $patched "server_socket: .quad 0`n" "server_socket: .quad 0`nstdout_handle: .quad 0`n" 'stdout handle storage'
 
-$oldWriteStdout = @'
-# write_stdout(ptr, len)
-write_stdout:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 64
-
-    mov qword ptr [rbp - 8], rcx
-    mov qword ptr [rbp - 16], rdx
-
+$oldGetStdHandleBlock = @'
     mov ecx, STD_OUTPUT_HANDLE
     call GetStdHandle
 
     mov rcx, rax
-    mov rdx, qword ptr [rbp - 8]
-    mov r8, qword ptr [rbp - 16]
-    lea r9, [rip + written_done]
-    mov qword ptr [rsp + 32], 0
-    call WriteFile
-
-    leave
-    ret
 '@
 
-$newWriteStdout = @'
-# write_stdout(ptr, len)
-write_stdout:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 64
-
-    mov qword ptr [rbp - 8], rcx
-    mov qword ptr [rbp - 16], rdx
-
+$newGetStdHandleBlock = @'
     mov rcx, qword ptr [rip + stdout_handle]
     test rcx, rcx
     jne .stdout_ready
@@ -69,17 +45,16 @@ write_stdout:
     mov rcx, rax
 
 .stdout_ready:
-    mov rdx, qword ptr [rbp - 8]
-    mov r8, qword ptr [rbp - 16]
-    lea r9, [rip + written_done]
-    mov qword ptr [rsp + 32], 0
-    call WriteFile
-
-    leave
-    ret
 '@
 
-Replace-Once $oldWriteStdout $newWriteStdout 'write_stdout cache body'
+$writeStdoutAt = $patched.IndexOf('write_stdout:')
+if ($writeStdoutAt -lt 0) {
+    throw 'harden-win-log: missing patch point: write_stdout label'
+}
 
-[IO.File]::WriteAllText($Asm, $s.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
+$tail = $patched.Substring($writeStdoutAt)
+$patchedTail = Replace-Once $tail $oldGetStdHandleBlock $newGetStdHandleBlock 'write_stdout cache body'
+$patched = $patched.Substring(0, $writeStdoutAt) + $patchedTail
+
+[IO.File]::WriteAllText($Asm, $patched.Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 Write-Host 'harden-win-log: ok'
