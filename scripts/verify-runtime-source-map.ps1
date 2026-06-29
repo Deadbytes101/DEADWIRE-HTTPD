@@ -13,6 +13,9 @@ $ResponseHarnessExePath = Join-Path $BuildDir 'verify_runtime_response.exe'
 $ClientHarnessPath = Join-Path $BuildDir 'verify_runtime_client.s'
 $ClientHarnessObjectPath = Join-Path $BuildDir 'verify_runtime_client.o'
 $ClientHarnessExePath = Join-Path $BuildDir 'verify_runtime_client.exe'
+$RecvHarnessPath = Join-Path $BuildDir 'verify_runtime_recv.s'
+$RecvHarnessObjectPath = Join-Path $BuildDir 'verify_runtime_recv.o'
+$RecvHarnessExePath = Join-Path $BuildDir 'verify_runtime_recv.exe'
 
 if (-not (Test-Path $SourcePath)) {
     throw "missing runtime source map: $SourcePath"
@@ -23,6 +26,7 @@ $RequiredSymbols = @(
     'dw_runtime_main:',
     'dw_runtime_accept_loop:',
     'dw_runtime_handle_client:',
+    'dw_runtime_recv_request:',
     'dw_runtime_send_response:',
     'dw_runtime_send_all:',
     'dw_runtime_write_output:',
@@ -49,6 +53,19 @@ $RequiredClientNeedles = @(
 foreach ($Needle in $RequiredClientNeedles) {
     if (-not $Source.Contains($Needle)) {
         throw "missing runtime client ABI logic: $Needle"
+    }
+}
+
+$RequiredRecvNeedles = @(
+    '# dw_runtime_recv_request(socket rcx, buffer rdx, capacity r8) maps to request receive boundary.',
+    'call recv',
+    '.dw_runtime_recv_request_bad:',
+    'mov eax, -1'
+)
+
+foreach ($Needle in $RequiredRecvNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime recv logic: $Needle"
     }
 }
 
@@ -135,10 +152,12 @@ $RequiredObjectSymbols = @(
     'dw_runtime_main',
     'dw_runtime_accept_loop',
     'dw_runtime_handle_client',
+    'dw_runtime_recv_request',
     'dw_runtime_send_response',
     'dw_runtime_send_all',
     'dw_runtime_write_output',
     'dw_runtime_u64_to_dec',
+    'recv',
     'send',
     'GetStdHandle',
     'WriteFile'
@@ -315,7 +334,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "runtime response harness assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ResponseHarnessExePath $ResponseHarnessObjectPath $ObjectPath -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ResponseHarnessExePath $ResponseHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "runtime response harness link failed with exit code $LASTEXITCODE"
 }
@@ -457,7 +476,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $ClientHarnessExePath $ClientHarnessObjectPath $ObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness link failed with exit code $LASTEXITCODE"
 }
@@ -465,6 +484,84 @@ if ($LASTEXITCODE -ne 0) {
 & $ClientHarnessExePath
 if ($LASTEXITCODE -ne 0) {
     throw "runtime client harness failed with exit code $LASTEXITCODE"
+}
+
+@'
+.intel_syntax noprefix
+.global mainCRTStartup
+.global recv
+.global send
+.extern dw_runtime_recv_request
+.extern ExitProcess
+
+.section .data
+recv_buffer:
+    .skip 16
+
+.section .text
+mainCRTStartup:
+    sub rsp, 40
+
+    mov rcx, 1
+    xor rdx, rdx
+    mov r8, 16
+    call dw_runtime_recv_request
+    cmp eax, -1
+    jne fail
+
+    mov rcx, 1
+    lea rdx, [rip + recv_buffer]
+    xor r8, r8
+    call dw_runtime_recv_request
+    cmp eax, -1
+    jne fail
+
+    mov rcx, 1
+    lea rdx, [rip + recv_buffer]
+    mov r8, 16
+    call dw_runtime_recv_request
+    cmp eax, 3
+    jne fail
+    cmp byte ptr [rip + recv_buffer + 0], 'G'
+    jne fail
+    cmp byte ptr [rip + recv_buffer + 1], 'E'
+    jne fail
+    cmp byte ptr [rip + recv_buffer + 2], 'T'
+    jne fail
+
+pass:
+    xor ecx, ecx
+    call ExitProcess
+
+fail:
+    mov ecx, 1
+    call ExitProcess
+
+recv:
+    mov byte ptr [rdx + 0], 'G'
+    mov byte ptr [rdx + 1], 'E'
+    mov byte ptr [rdx + 2], 'T'
+    mov eax, 3
+    ret
+
+send:
+    mov eax, r8d
+    ret
+'@ | Set-Content -Encoding ASCII $RecvHarnessPath
+
+& as --64 -o $RecvHarnessObjectPath $RecvHarnessPath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime recv harness assembly failed with exit code $LASTEXITCODE"
+}
+
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' -o $RecvHarnessExePath $RecvHarnessObjectPath $ObjectPath -lkernel32
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime recv harness link failed with exit code $LASTEXITCODE"
+}
+
+& $RecvHarnessExePath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime recv harness failed with exit code $LASTEXITCODE"
 }
 
 Write-Output 'verify-runtime-source-map: ok'

@@ -6,6 +6,7 @@
 # The live implementation remains src/deadwire_windows.s.
 
 .extern send
+.extern recv
 .extern GetStdHandle
 .extern WriteFile
 
@@ -43,6 +44,7 @@
 .global dw_runtime_main
 .global dw_runtime_accept_loop
 .global dw_runtime_handle_client
+.global dw_runtime_recv_request
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -90,6 +92,26 @@ dw_runtime_handle_client:
 
 .dw_runtime_handle_client_null:
     mov eax, 1
+    leave
+    ret
+
+# dw_runtime_recv_request(socket rcx, buffer rdx, capacity r8) maps to request receive boundary.
+dw_runtime_recv_request:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
+    test rdx, rdx
+    je .dw_runtime_recv_request_bad
+    test r8, r8
+    je .dw_runtime_recv_request_bad
+    xor r9d, r9d
+    call recv
+    leave
+    ret
+
+.dw_runtime_recv_request_bad:
+    mov eax, -1
     leave
     ret
 
