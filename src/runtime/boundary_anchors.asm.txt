@@ -1,0 +1,9 @@
+DEADWIRE V2 runtime boundary anchors
+
+This file is not assembled yet.
+
+mainCRTStartup entry boundary
+handle_client client boundary
+send_response response boundary
+send_all send boundary
+write_stdout output boundary
