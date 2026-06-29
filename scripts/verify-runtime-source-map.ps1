@@ -25,6 +25,21 @@ foreach ($Symbol in $RequiredSymbols) {
     }
 }
 
+$RequiredSendAllNeedles = @(
+    '# dw_runtime_send_all(socket rcx, buffer rdx, length r8) maps to send_all.',
+    '.dw_runtime_send_loop:',
+    'call send',
+    'cdqe',
+    'add qword ptr [rbp - 16], rax',
+    'sub qword ptr [rbp - 24], rax'
+)
+
+foreach ($Needle in $RequiredSendAllNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime send_all logic: $Needle"
+    }
+}
+
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
@@ -50,7 +65,8 @@ $RequiredObjectSymbols = @(
     'dw_runtime_handle_client',
     'dw_runtime_send_response',
     'dw_runtime_send_all',
-    'dw_runtime_write_output'
+    'dw_runtime_write_output',
+    'send'
 )
 
 foreach ($Symbol in $RequiredObjectSymbols) {
