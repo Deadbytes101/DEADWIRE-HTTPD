@@ -28,6 +28,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2-worker-context.ps1
     Check-Status 'verify-v2-worker-context'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2lane.ps1
+    Check-Status 'verify-v2lane'
+
     make verify
     Check-Status 'make verify'
 
