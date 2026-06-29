@@ -2,13 +2,14 @@ param(
     [int] $Port = 19200,
     [int] $Requests = 1024,
     [string] $Path = '/health',
-    [int] $Rounds = 5
+    [int] $Rounds = 5,
+    [string] $ServerExePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$ServerExe = Join-Path $Root 'build\deadwire.exe'
+$ServerExe = if ($ServerExePath) { $ServerExePath } else { Join-Path $Root 'build\deadwire.exe' }
 $BenchSrc = Join-Path $Root 'tools\deadwire_bench.c'
 $BenchExe = Join-Path $Root 'build\deadwire_bench.exe'
 $Log = Join-Path $Root 'build\deadwire-native-bench.log'
