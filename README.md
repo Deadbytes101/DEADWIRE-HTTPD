@@ -73,6 +73,16 @@ make build-keepalive
 make verify-keepalive
 ```
 
+## V2 DIRECTION
+
+```txt
+V1.3.0 IS RELEASED.
+V2 TARGETS A REAL NATIVE RUNTIME:
+THREAD ABSTRACTION, SYNCHRONIZATION LAYER, WORKER POOL, AND ASSEMBLY-FIRST SERVER CORE.
+```
+
+SEE `docs/v2-native-runtime-parity-roadmap.md`.
+
 ## SCOPE
 
 ```txt
