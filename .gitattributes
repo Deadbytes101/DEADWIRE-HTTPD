@@ -1,0 +1,2 @@
+# Repository language stats should reflect the product core, not helper scripts.
+*.ps1 linguist-generated=true
