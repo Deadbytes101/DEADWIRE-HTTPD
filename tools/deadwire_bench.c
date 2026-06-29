@@ -79,6 +79,7 @@ static int run_one(const char *host, int port, const char *path, long long *byte
     char request[1024];
     char buffer[8192];
     int request_len = 0;
+    int connect_only = strcmp(path, "--connect-only") == 0;
     long long total = 0;
 
     memset(&addr, 0, sizeof(addr));
@@ -98,10 +99,12 @@ static int run_one(const char *host, int port, const char *path, long long *byte
     }
 #endif
 
-    request_len = snprintf(request, sizeof(request), "GET %s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n", path, host);
-    if (request_len <= 0 || request_len >= (int)sizeof(request)) {
-        fprintf(stderr, "native-bench: request too large\n");
-        return 1;
+    if (!connect_only) {
+        request_len = snprintf(request, sizeof(request), "GET %s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n", path, host);
+        if (request_len <= 0 || request_len >= (int)sizeof(request)) {
+            fprintf(stderr, "native-bench: request too large\n");
+            return 1;
+        }
     }
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -113,6 +116,12 @@ static int run_one(const char *host, int port, const char *path, long long *byte
     if (connect(sock, (struct sockaddr *)&addr, (int)sizeof(addr)) == SOCKET_ERROR) {
         close_socket(sock);
         return 1;
+    }
+
+    if (connect_only) {
+        close_socket(sock);
+        *bytes_out = 0;
+        return 0;
     }
 
     if (send_all_bytes(sock, request, request_len) != 0) {
@@ -195,7 +204,7 @@ int main(int argc, char **argv) {
 #endif
 
     if (argc != 6) {
-        fprintf(stderr, "usage: deadwire_bench <host> <port> <path> <requests> <rounds>\n");
+        fprintf(stderr, "usage: deadwire_bench <host> <port> <path|--connect-only> <requests> <rounds>\n");
 #ifdef _WIN32
         WSACleanup();
 #endif
@@ -214,8 +223,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (path[0] != '/') {
-        fprintf(stderr, "native-bench: path must start with /\n");
+    if (path[0] != '/' && strcmp(path, "--connect-only") != 0) {
+        fprintf(stderr, "native-bench: path must start with / or be --connect-only\n");
 #ifdef _WIN32
         WSACleanup();
 #endif
