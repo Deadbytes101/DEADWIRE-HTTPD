@@ -45,6 +45,7 @@
 .global dw_runtime_accept_loop
 .global dw_runtime_handle_client
 .global dw_runtime_recv_request
+.global dw_runtime_request_is_get
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -86,11 +87,24 @@ dw_runtime_handle_client:
     call dw_runtime_recv_request
     cmp eax, 0
     jle .dw_runtime_handle_client_recv_failed
+    cdqe
+    mov qword ptr [rbp - 40], rax
+
+    mov rcx, qword ptr [rbp - 16]
+    mov rdx, qword ptr [rbp - 40]
+    call dw_runtime_request_is_get
+    test eax, eax
+    je .dw_runtime_handle_client_bad_request
 
     mov rcx, qword ptr [rbp - 8]
     mov rdx, qword ptr [rbp - 32]
     call dw_runtime_send_response
     xor eax, eax
+    leave
+    ret
+
+.dw_runtime_handle_client_bad_request:
+    mov eax, 4
     leave
     ret
 
@@ -127,6 +141,25 @@ dw_runtime_recv_request:
 .dw_runtime_recv_request_bad:
     mov eax, -1
     leave
+    ret
+
+# dw_runtime_request_is_get(buffer rcx, length rdx) maps to request parser boundary.
+dw_runtime_request_is_get:
+    test rcx, rcx
+    je .dw_runtime_request_is_get_no
+    cmp rdx, 3
+    jb .dw_runtime_request_is_get_no
+    cmp byte ptr [rcx + 0], 'G'
+    jne .dw_runtime_request_is_get_no
+    cmp byte ptr [rcx + 1], 'E'
+    jne .dw_runtime_request_is_get_no
+    cmp byte ptr [rcx + 2], 'T'
+    jne .dw_runtime_request_is_get_no
+    mov eax, 1
+    ret
+
+.dw_runtime_request_is_get_no:
+    xor eax, eax
     ret
 
 # dw_runtime_send_response(socket rcx, response rdx) maps to send_response.
