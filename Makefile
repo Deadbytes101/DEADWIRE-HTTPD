@@ -50,6 +50,11 @@ BENCH_NATIVE_LIFECYCLE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -F
 BENCH_NATIVE_NOLOG_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-nolog.ps1 -Requests 32768 -Rounds 5
 BUILD_QUIET_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-win-accesslog-off.ps1
 BENCH_NATIVE_QUIET_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native-quiet.ps1 -Requests 32768 -Rounds 5
+BUILD_KEEPALIVE_EXPERIMENTAL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-win-keepalive-experimental.ps1
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19850 -Requests 32768 -Path /health -Rounds 5 -KeepAlive
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19851 -Requests 32768 -Path /hello.txt -Rounds 5 -KeepAlive
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19852 -Requests 32768 -Path /missing-bench.txt -Rounds 5 -KeepAlive
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19853 -Requests 32768 -Path / -Rounds 5 -KeepAlive
 else
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 ifeq ($(UNAME_S),Linux)
@@ -97,6 +102,11 @@ BENCH_NATIVE_LIFECYCLE_CMD = true
 BENCH_NATIVE_NOLOG_CMD = true
 BUILD_QUIET_CMD = true
 BENCH_NATIVE_QUIET_CMD = true
+BUILD_KEEPALIVE_EXPERIMENTAL_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_INDEX_CMD = true
 else ifeq ($(UNAME_S),Darwin)
 PLATFORM := darwin
 TARGET := build/deadwire
@@ -142,6 +152,11 @@ BENCH_NATIVE_LIFECYCLE_CMD = true
 BENCH_NATIVE_NOLOG_CMD = true
 BUILD_QUIET_CMD = true
 BENCH_NATIVE_QUIET_CMD = true
+BUILD_KEEPALIVE_EXPERIMENTAL_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = true
+BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_INDEX_CMD = true
 else
 $(error unsupported platform: $(UNAME_S). DEADWIRE currently supports Windows_NT, Linux, and Darwin)
 endif
@@ -151,7 +166,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify verify-quiet probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet clean doctor platform
+.PHONY: all run verify verify-quiet probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet build-keepalive-experimental bench-native-keepalive-experimental clean doctor platform
 
 all: $(TARGET)
 
@@ -266,6 +281,15 @@ build-quiet: all
 
 bench-native-quiet: all
 	$(BENCH_NATIVE_QUIET_CMD)
+
+build-keepalive-experimental: all
+	$(BUILD_KEEPALIVE_EXPERIMENTAL_CMD)
+
+bench-native-keepalive-experimental: build-keepalive-experimental
+	$(BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD)
+	$(BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD)
+	$(BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD)
+	$(BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_INDEX_CMD)
 
 clean:
 ifeq ($(PLATFORM),windows)
