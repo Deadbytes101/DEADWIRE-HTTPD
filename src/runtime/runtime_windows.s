@@ -42,6 +42,7 @@
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
+.global dw_runtime_u64_to_dec
 
 # dw_runtime_main maps to mainCRTStartup.
 dw_runtime_main:
