@@ -40,6 +40,19 @@ foreach ($Needle in $RequiredSendAllNeedles) {
     }
 }
 
+$RequiredWriteOutputNeedles = @(
+    '# dw_runtime_write_output(ptr rcx, length rdx) maps to write_stdout.',
+    'mov ecx, STD_OUTPUT_HANDLE',
+    'call GetStdHandle',
+    'call WriteFile'
+)
+
+foreach ($Needle in $RequiredWriteOutputNeedles) {
+    if (-not $Source.Contains($Needle)) {
+        throw "missing runtime write_output logic: $Needle"
+    }
+}
+
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
@@ -66,7 +79,9 @@ $RequiredObjectSymbols = @(
     'dw_runtime_send_response',
     'dw_runtime_send_all',
     'dw_runtime_write_output',
-    'send'
+    'send',
+    'GetStdHandle',
+    'WriteFile'
 )
 
 foreach ($Symbol in $RequiredObjectSymbols) {
