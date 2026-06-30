@@ -24,6 +24,16 @@ These gates are chained from `scripts/verify-v2final.ps1`, which is reached by `
 | `dw_runtime_worker_complete` | 18/20 | 51/56 | 0/0 | 5/5 |
 | `dw_runtime_work_step` | 8/10 | 24/28 | 2/2 | 2/2 |
 
+## Microbench
+
+Run the V2 handoff microbench on Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime.ps1 -Requests 262144
+```
+
+The benchmark exercises the generated hot runtime handoff path: input queue push, HTTP engine step, and output queue drain. It prints requests, seconds, ns/op, and ops/s. Timing is informational; structural budgets remain enforced by the verify gates.
+
 ## Rule
 
 If a hot helper grows, it must be intentional. The verifier should fail first, then the budget can be raised with a reason.
