@@ -33,6 +33,7 @@ MACOS   -> POSIX SOCKET PATH
 ## ARCHITECTURAL PIPELINE
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "transparent", "mainBkg": "transparent", "clusterBkg": "transparent", "clusterBorder": "#8b949e", "primaryColor": "#0d1117", "primaryTextColor": "#f0f6fc", "primaryBorderColor": "#8b949e", "lineColor": "#8b949e", "fontFamily": "monospace"}}}%%
 flowchart LR
     subgraph V1["DEFAULT V1 SERVER PIPELINE"]
         CLIENT["TCP CLIENT"] --> SOCKET["PLATFORM SOCKET"]
@@ -70,8 +71,8 @@ flowchart LR
     class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP node
     class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2ROUTE,V2OUT,V2CHECK,V2STOP,V2SHUT node
     class ROUTE node
-    style V1 fill:transparent,stroke:#8b949e,color:#f0f6fc
-    style V2 fill:transparent,stroke:#8b949e,color:#f0f6fc
+    style V1 fill:none,stroke:#8b949e,color:#f0f6fc
+    style V2 fill:none,stroke:#8b949e,color:#f0f6fc
 ```
 
 ## BUILD
