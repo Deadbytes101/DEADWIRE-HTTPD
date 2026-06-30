@@ -114,25 +114,17 @@ work_entry_ctx:
     .quad 0
     .quad 0
     .quad 0
-output_entry_ctx:
-    .quad 0
-    .quad 0
-    .quad output_queue
-    .quad 0
-    .quad 0
 accept_tid:
     .quad 0
 work_tid:
     .quad 0
-output_tid:
-    .quad 0
 spawn_ctx:
     .quad accept_entry_ctx
     .quad work_entry_ctx
-    .quad output_entry_ctx
+    .quad 0
     .quad accept_tid
     .quad work_tid
-    .quad output_tid
+    .quad 0
     .quad 0
     .quad 0
     .quad 0
