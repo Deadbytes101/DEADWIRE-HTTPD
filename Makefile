@@ -57,6 +57,7 @@ BENCH_NATIVE_QUIET_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File 
 BUILD_KEEPALIVE_EXPERIMENTAL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-win-keepalive-experimental.ps1
 BUILD_KEEPALIVE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-win-keepalive.ps1
 BUILD_V2_RUNTIME_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/build-v2-runtime.ps1
+BENCH_V2_RUNTIME_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime.ps1 -Requests 262144 -Rounds 5
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19850 -Requests 32768 -Path /health -Rounds 5 -KeepAlive
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19851 -Requests 32768 -Path /hello.txt -Rounds 5 -KeepAlive
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-native.ps1 -ServerExePath build/deadwire_keepalive_experimental.exe -Port 19852 -Requests 32768 -Path /missing-bench.txt -Rounds 5 -KeepAlive
@@ -119,6 +120,7 @@ BENCH_NATIVE_QUIET_CMD = true
 BUILD_KEEPALIVE_EXPERIMENTAL_CMD = true
 BUILD_KEEPALIVE_CMD = true
 BUILD_V2_RUNTIME_CMD = true
+BENCH_V2_RUNTIME_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = true
@@ -179,6 +181,7 @@ BENCH_NATIVE_QUIET_CMD = true
 BUILD_KEEPALIVE_EXPERIMENTAL_CMD = true
 BUILD_KEEPALIVE_CMD = true
 BUILD_V2_RUNTIME_CMD = true
+BENCH_V2_RUNTIME_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_STATIC_CMD = true
 BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_MISSING_CMD = true
@@ -196,7 +199,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify verify-runtime-boundary verify-triple-thread verify-quiet verify-keepalive-experimental verify-keepalive probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet build-keepalive-experimental build-keepalive build-v2-runtime bench-native-keepalive-experimental bench-native-keepalive clean doctor platform
+.PHONY: all run verify verify-runtime-boundary verify-triple-thread verify-quiet verify-keepalive-experimental verify-keepalive probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet build-keepalive-experimental build-keepalive build-v2-runtime bench-v2-runtime bench-native-keepalive-experimental bench-native-keepalive clean doctor platform
 
 all: $(TARGET)
 
@@ -332,6 +335,9 @@ build-keepalive: all
 
 build-v2-runtime:
 	$(BUILD_V2_RUNTIME_CMD)
+
+bench-v2-runtime: build-v2-runtime
+	$(BENCH_V2_RUNTIME_CMD)
 
 bench-native-keepalive-experimental: build-keepalive-experimental
 	$(BENCH_NATIVE_KEEPALIVE_EXPERIMENTAL_HEALTH_CMD)
