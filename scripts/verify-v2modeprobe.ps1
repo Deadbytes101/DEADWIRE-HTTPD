@@ -6,6 +6,9 @@ if($LASTEXITCODE){throw "lane shape $LASTEXITCODE"}
 $HotShapeProbe=Join-Path $R 'scripts/verify-v2hotshape.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HotShapeProbe
 if($LASTEXITCODE){throw "hot shape $LASTEXITCODE"}
+$HotObjectProbe=Join-Path $R 'scripts/verify-v2hotobject.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HotObjectProbe
+if($LASTEXITCODE){throw "hot object $LASTEXITCODE"}
 $AcceptorProbe=Join-Path $R 'scripts/verify-v2acceptorprobe.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $AcceptorProbe
 if($LASTEXITCODE){throw "acceptor probe $LASTEXITCODE"}
