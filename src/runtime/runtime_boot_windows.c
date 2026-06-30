@@ -22,6 +22,7 @@ static uint64_t client_context[4];
 static uint64_t tick_context[7];
 static uint64_t bound_context[4];
 static uint64_t mode_context[2];
+static uint64_t loop_context[3];
 static uint64_t response_context[6];
 static char request_buffer[512];
 static char response_buffer[1024];
@@ -119,6 +120,12 @@ static void deadwire_prepare_tick(void) {
     mode_context[1] = 99;
 }
 
+static void deadwire_prepare_loop(void) {
+    loop_context[0] = DEADWIRE_SMOKE_REQUESTS;
+    loop_context[1] = 0;
+    loop_context[2] = 99;
+}
+
 static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int request_index) {
     SOCKET peer_socket = INVALID_SOCKET;
     int received;
@@ -190,11 +197,29 @@ static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int reques
     return 0;
 }
 
+static int deadwire_run_bounded_smoke_loop(struct sockaddr_in *bound_addr) {
+    int i;
+    int result;
+
+    deadwire_prepare_loop();
+
+    for (i = 0; i < DEADWIRE_SMOKE_REQUESTS; ++i) {
+        result = deadwire_run_smoke_request(bound_addr, i);
+        if (result) {
+            loop_context[2] = (uint64_t)result;
+            return result;
+        }
+        loop_context[1] = (uint64_t)(i + 1);
+    }
+
+    loop_context[2] = 0;
+    return 0;
+}
+
 static int deadwire_v2_live_smoke(void) {
     struct sockaddr_in server_addr;
     struct sockaddr_in bound_addr;
     int bound_len = (int)sizeof(bound_addr);
-    int i;
     int result;
 
     server_addr.sin_family = AF_INET;
@@ -241,6 +266,7 @@ static int deadwire_v2_live_smoke(void) {
     mode_context[1] = 99;
 
     deadwire_prepare_tick();
+    deadwire_prepare_loop();
 
     if (dw_runtime_worker_init(worker_context, 7, input_queue, output_queue)) {
         return 1;
@@ -254,22 +280,24 @@ static int deadwire_v2_live_smoke(void) {
         return deadwire_finish_with_shutdown(3, 130);
     }
 
-    for (i = 0; i < DEADWIRE_SMOKE_REQUESTS; ++i) {
-        result = deadwire_run_smoke_request(&bound_addr, i);
-        if (result) {
-            return deadwire_finish_with_shutdown(result, 131);
-        }
+    result = deadwire_run_bounded_smoke_loop(&bound_addr);
+    if (result) {
+        return deadwire_finish_with_shutdown(result, 131);
     }
 
-    if (input_queue[0] != 0 || input_queue[1] != 0 || output_queue[0] != 0 || output_queue[1] != 0 || worker_context[4] != DEADWIRE_SMOKE_REQUESTS) {
+    if (loop_context[0] != DEADWIRE_SMOKE_REQUESTS || loop_context[1] != DEADWIRE_SMOKE_REQUESTS || loop_context[2] != 0) {
         return deadwire_finish_with_shutdown(120, 132);
     }
 
-    if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
+    if (input_queue[0] != 0 || input_queue[1] != 0 || output_queue[0] != 0 || output_queue[1] != 0 || worker_context[4] != DEADWIRE_SMOKE_REQUESTS) {
         return deadwire_finish_with_shutdown(121, 133);
     }
 
-    return deadwire_finish_with_shutdown(0, 134);
+    if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
+        return deadwire_finish_with_shutdown(122, 134);
+    }
+
+    return deadwire_finish_with_shutdown(0, 135);
 }
 
 void mainCRTStartup(void) {
