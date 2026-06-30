@@ -9,6 +9,7 @@
 .extern recv
 .extern GetStdHandle
 .extern WriteFile
+.extern CreateThread
 
 .equ STD_OUTPUT_HANDLE, -11
 .equ DW_RESPONSE_STATUS_PTR, 0
@@ -71,6 +72,7 @@
 .global dw_runtime_accept_entry
 .global dw_runtime_work_entry
 .global dw_runtime_output_entry
+.global dw_runtime_spawn_entry
 .global dw_runtime_send_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
@@ -462,6 +464,37 @@ dw_runtime_output_entry:
     ret
 
 .dw_runtime_output_entry_empty_no_context:
+    xor eax, eax
+    leave
+    ret
+
+# dw_runtime_spawn_entry(entry_fn rcx, entry_context rdx, thread_id_out r8) maps to the raw lane spawn boundary.
+dw_runtime_spawn_entry:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
+    test rcx, rcx
+    je .dw_runtime_spawn_entry_bad
+    test rdx, rdx
+    je .dw_runtime_spawn_entry_bad
+
+    mov qword ptr [rbp - 8], rcx
+    mov qword ptr [rbp - 16], rdx
+    mov qword ptr [rbp - 24], r8
+
+    xor ecx, ecx
+    xor edx, edx
+    mov r8, qword ptr [rbp - 8]
+    mov r9, qword ptr [rbp - 16]
+    mov qword ptr [rsp + 32], 0
+    mov rax, qword ptr [rbp - 24]
+    mov qword ptr [rsp + 40], rax
+    call CreateThread
+    leave
+    ret
+
+.dw_runtime_spawn_entry_bad:
     xor eax, eax
     leave
     ret
