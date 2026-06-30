@@ -59,11 +59,19 @@ flowchart LR
         V2TICK --> V2ACCEPT["ACCEPTOR HANDOFF"]
         V2ACCEPT --> V2QUEUE["INPUT QUEUE"]
         V2QUEUE --> V2HTTP["HTTP REQUEST STEP"]
-        V2HTTP --> V2OUT["OUTPUT DRAIN"]
-        V2OUT --> V2CHECK["/health + 404 RESPONSE CHECK"]
+        V2HTTP --> V2ROUTE["RUNTIME ROUTE SELECTOR"]
+        V2ROUTE --> V2OUT["OUTPUT DRAIN"]
+        V2OUT --> V2CHECK["RESPONSE SHAPE CHECK"]
         V2CHECK --> V2STOP["TARGET-REACHED STOP"]
         V2STOP --> V2SHUT["SHUTDOWN PROOF"]
     end
+
+    classDef node fill:#0d1117,stroke:#8b949e,color:#f0f6fc
+    class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP node
+    class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2ROUTE,V2OUT,V2CHECK,V2STOP,V2SHUT node
+    class ROUTE node
+    style V1 fill:transparent,stroke:#8b949e,color:#f0f6fc
+    style V2 fill:transparent,stroke:#8b949e,color:#f0f6fc
 ```
 
 ## BUILD
