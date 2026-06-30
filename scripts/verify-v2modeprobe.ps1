@@ -64,3 +64,6 @@ Write-Output 'verify-v2modeprobe: ok'
 $HandleProbe=Join-Path $R 'scripts/verify-v2handleprobe.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HandleProbe
 if($LASTEXITCODE){throw "handle probe $LASTEXITCODE"}
+$RunProbe=Join-Path $R 'scripts/verify-v2run.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RunProbe
+if($LASTEXITCODE){throw "run probe $LASTEXITCODE"}
