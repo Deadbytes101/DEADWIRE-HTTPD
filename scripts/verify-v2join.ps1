@@ -108,6 +108,15 @@ mainCRTStartup:
     cmp qword ptr [rip + bad_ctx + 72], 1
     jne fail
 
+    mov qword ptr [rip + wait_count], 0
+    mov qword ptr [rip + close_count], 0
+    mov qword ptr [rip + wait_seen + 0], 0
+    mov qword ptr [rip + wait_seen + 8], 0
+    mov qword ptr [rip + wait_seen + 16], 0
+    mov qword ptr [rip + close_seen + 0], 0
+    mov qword ptr [rip + close_seen + 8], 0
+    mov qword ptr [rip + close_seen + 16], 0
+
     lea rcx, [rip + spawn_ctx]
     call dw_runtime_join_lanes
     test eax, eax
