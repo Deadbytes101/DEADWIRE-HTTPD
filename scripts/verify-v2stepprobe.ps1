@@ -53,3 +53,6 @@ int main(void){
 & gcc -o $EXE $COBJ $RO $LO $AO $BO $CO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EXE; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2stepprobe: ok'
+$CycleProbe=Join-Path $R 'scripts/verify-v2cycleprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $CycleProbe
+if($LASTEXITCODE){throw "cycle probe $LASTEXITCODE"}
