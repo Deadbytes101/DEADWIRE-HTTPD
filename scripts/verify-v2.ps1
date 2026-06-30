@@ -43,6 +43,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2handle.ps1
     Check-Status 'verify-v2handle'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2join.ps1
+    Check-Status 'verify-v2join'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2build.ps1
     Check-Status 'verify-v2build'
 
