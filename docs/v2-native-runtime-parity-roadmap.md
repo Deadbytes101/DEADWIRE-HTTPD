@@ -22,6 +22,7 @@ CURRENT V2 PROOF:
 - V2 request step takes one queued client, runs the HTTP handler, and completes it
 - V2 tick path accepts a loopback client and routes through the request step
 - deadwire_v2_runtime.exe runs a bounded multi-request live smoke path and exits nonzero on failure
+- V2 bounded smoke loop tracks target count, completed count, and last result
 - V2 shutdown checks live socket reset, accepted socket sentinel reset, and idempotent live close
 - make verify-triple-thread reaches verify-v2final and executes the V2 runtime exe
 ```
@@ -191,7 +192,32 @@ Status:
 ACTIVE. SHUTDOWN STATE IS CHECKED BY THE V2 SMOKE EXE.
 ```
 
-### V2.5: Long-Running V2 Mode
+### V2.5: Bounded Loop Proof
+
+```txt
+- V2 smoke owns a bounded loop context
+- loop target count is explicit
+- completed count must reach the target
+- last result must end at zero
+- failure records the failing result before shutdown
+- default server still untouched until parity is proven
+```
+
+Pass condition:
+
+```txt
+make build-v2-runtime
+.\build\deadwire_v2_runtime.exe
+make verify-triple-thread
+```
+
+Status:
+
+```txt
+ACTIVE. LOOP STATE IS CHECKED BY THE V2 SMOKE EXE.
+```
+
+### V2.6: Long-Running V2 Mode
 
 ```txt
 - opt-in executable can run a bounded listener loop
@@ -204,11 +230,12 @@ Pass condition:
 
 ```txt
 bounded multi-request smoke passes
+bounded loop proof passes
 shutdown proof passes
 no leaked socket handle in local probe
 ```
 
-### V2.6: Default Server Parity Gate
+### V2.7: Default Server Parity Gate
 
 ```txt
 - V2 path preserves V1 behavior for /health, /, /hello.txt, /style.css, missing files, method rejection, and path guard
@@ -251,7 +278,7 @@ NO RUNTIME MAGIC THAT CANNOT BE EXPLAINED AT THE ABI LEVEL.
 
 ```txt
 NEXT PATCH:
-- move from shutdown proof to long-running V2 mode sketch
+- move from bounded loop proof to long-running V2 mode sketch
 - keep default server wording honest
 - do not claim public server performance from the local V2 microbench
 ```
