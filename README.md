@@ -33,46 +33,46 @@ MACOS   -> POSIX SOCKET PATH
 ## ARCHITECTURAL PIPELINE
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"background": "transparent", "mainBkg": "transparent", "clusterBkg": "transparent", "clusterBorder": "#8b949e", "primaryColor": "#0d1117", "primaryTextColor": "#f0f6fc", "primaryBorderColor": "#8b949e", "lineColor": "#8b949e", "fontFamily": "monospace"}}}%%
-flowchart LR
-    subgraph V1["DEFAULT V1 SERVER PIPELINE"]
-        CLIENT["TCP CLIENT"] --> SOCKET["PLATFORM SOCKET"]
-        SOCKET --> RECV["RECV / READ"]
-        RECV --> PARSE["REQUEST PARSER"]
-        PARSE --> GUARD["PATH GUARD"]
-        GUARD --> ROUTE{"ROUTE"}
-        ROUTE --> HEALTH["/health"]
-        ROUTE --> STATIC["public file"]
-        ROUTE --> MISS["404"]
-        HEALTH --> RESPONSE["RESPONSE BUILDER"]
-        STATIC --> RESPONSE
-        MISS --> RESPONSE
-        RESPONSE --> SEND["SEND ALL"]
-        SEND --> CLOSE["CLOSE"]
-        SEND --> LOOP["KEEP-ALIVE LOOP"]
-    end
+%%{init: {"theme": "base", "themeVariables": {"background": "transparent", "primaryColor": "#0d1117", "primaryTextColor": "#f0f6fc", "primaryBorderColor": "#8b949e", "lineColor": "#8b949e", "fontFamily": "monospace"}}}%%
+flowchart TD
+    V1TITLE["DEFAULT V1 SERVER PIPELINE"]
+    V1TITLE --> CLIENT["TCP CLIENT"]
+    CLIENT --> SOCKET["PLATFORM SOCKET"]
+    SOCKET --> RECV["RECV / READ"]
+    RECV --> PARSE["REQUEST PARSER"]
+    PARSE --> GUARD["PATH GUARD"]
+    GUARD --> ROUTE{"ROUTE"}
+    ROUTE --> HEALTH["/health"]
+    ROUTE --> STATIC["public file"]
+    ROUTE --> MISS["404"]
+    HEALTH --> RESPONSE["RESPONSE BUILDER"]
+    STATIC --> RESPONSE
+    MISS --> RESPONSE
+    RESPONSE --> SEND["SEND ALL"]
+    SEND --> CLOSE["CLOSE"]
+    SEND --> LOOP["KEEP-ALIVE LOOP"]
 
-    subgraph V2["OPT-IN V2 RUNTIME PROOF PIPELINE"]
-        V2BOOT["deadwire_v2_runtime.exe"] --> V2LONG["LONG MODE CONTROLLER"]
-        V2LONG --> V2LIVE["OPEN LOOPBACK LISTENER"]
-        V2LIVE --> V2COUNT["BOUNDED LOOP TARGET"]
-        V2COUNT --> V2TICK["ONE V2 TICK PER REQUEST"]
-        V2TICK --> V2ACCEPT["ACCEPTOR HANDOFF"]
-        V2ACCEPT --> V2QUEUE["INPUT QUEUE"]
-        V2QUEUE --> V2HTTP["HTTP REQUEST STEP"]
-        V2HTTP --> V2ROUTE["RUNTIME ROUTE SELECTOR"]
-        V2ROUTE --> V2OUT["OUTPUT DRAIN"]
-        V2OUT --> V2CHECK["RESPONSE SHAPE CHECK"]
-        V2CHECK --> V2STOP["TARGET-REACHED STOP"]
-        V2STOP --> V2SHUT["SHUTDOWN PROOF"]
-    end
+    V2TITLE["OPT-IN V2 RUNTIME PROOF PIPELINE"]
+    V2TITLE --> V2BOOT["deadwire_v2_runtime.exe"]
+    V2BOOT --> V2LONG["LONG MODE CONTROLLER"]
+    V2LONG --> V2LIVE["OPEN LOOPBACK LISTENER"]
+    V2LIVE --> V2COUNT["BOUNDED LOOP TARGET"]
+    V2COUNT --> V2TICK["ONE V2 TICK PER REQUEST"]
+    V2TICK --> V2ACCEPT["ACCEPTOR HANDOFF"]
+    V2ACCEPT --> V2QUEUE["INPUT QUEUE"]
+    V2QUEUE --> V2HTTP["HTTP REQUEST STEP"]
+    V2HTTP --> V2ROUTE["RUNTIME ROUTE SELECTOR"]
+    V2ROUTE --> V2OUT["OUTPUT DRAIN"]
+    V2OUT --> V2CHECK["RESPONSE SHAPE CHECK"]
+    V2CHECK --> V2STOP["TARGET-REACHED STOP"]
+    V2STOP --> V2SHUT["SHUTDOWN PROOF"]
 
     classDef node fill:#0d1117,stroke:#8b949e,color:#f0f6fc
+    classDef title fill:#0d1117,stroke:#8b949e,color:#f0f6fc
     class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP node
     class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2ROUTE,V2OUT,V2CHECK,V2STOP,V2SHUT node
     class ROUTE node
-    style V1 fill:none,stroke:#8b949e,color:#f0f6fc
-    style V2 fill:none,stroke:#8b949e,color:#f0f6fc
+    class V1TITLE,V2TITLE title
 ```
 
 ## BUILD
