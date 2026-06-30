@@ -29,6 +29,7 @@ VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy By
 VERIFY_KEEPALIVE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-keepalive.ps1 -PortBase 19870
 VERIFY_RUNTIME_BOUNDARY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-boundary.ps1
 VERIFY_TRIPLE_THREAD_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2modeprobe.ps1
+VERIFY_V2_REQUEST_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2requestprobe.ps1
 PROBE_KEEPALIVE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/probe-keepalive.ps1 -Port 19820 -Path /health
 BENCH_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19100 -Requests 256 -Path /health
 BENCH_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19101 -Requests 256 -Path /
@@ -92,6 +93,7 @@ VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = true
 VERIFY_KEEPALIVE_CMD = true
 VERIFY_RUNTIME_BOUNDARY_CMD = true
 VERIFY_TRIPLE_THREAD_CMD = true
+VERIFY_V2_REQUEST_CMD = true
 PROBE_KEEPALIVE_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
@@ -153,6 +155,7 @@ VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = true
 VERIFY_KEEPALIVE_CMD = true
 VERIFY_RUNTIME_BOUNDARY_CMD = true
 VERIFY_TRIPLE_THREAD_CMD = true
+VERIFY_V2_REQUEST_CMD = true
 PROBE_KEEPALIVE_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
@@ -268,6 +271,7 @@ verify-runtime-boundary:
 
 verify-triple-thread:
 	$(VERIFY_TRIPLE_THREAD_CMD)
+	$(VERIFY_V2_REQUEST_CMD)
 
 verify-quiet: all
 	$(VERIFY_QUIET_CMD)
