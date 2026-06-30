@@ -27,6 +27,8 @@ VERIFY_PREFLIGHT_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File sc
 VERIFY_QUIET_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-quiet.ps1 -Port 19093
 VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-keepalive-experimental.ps1 -PortBase 19860
 VERIFY_KEEPALIVE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-keepalive.ps1 -PortBase 19870
+VERIFY_RUNTIME_BOUNDARY_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-runtime-boundary.ps1
+VERIFY_TRIPLE_THREAD_CMD = $(VERIFY_RUNTIME_BOUNDARY_CMD)
 PROBE_KEEPALIVE_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/probe-keepalive.ps1 -Port 19820 -Path /health
 BENCH_HEALTH_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19100 -Requests 256 -Path /health
 BENCH_INDEX_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/bench-smoke.ps1 -Port 19101 -Requests 256 -Path /
@@ -87,6 +89,8 @@ VERIFY_PREFLIGHT_CMD = true
 VERIFY_QUIET_CMD = true
 VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = true
 VERIFY_KEEPALIVE_CMD = true
+VERIFY_RUNTIME_BOUNDARY_CMD = true
+VERIFY_TRIPLE_THREAD_CMD = true
 PROBE_KEEPALIVE_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
@@ -145,6 +149,8 @@ VERIFY_PREFLIGHT_CMD = true
 VERIFY_QUIET_CMD = true
 VERIFY_KEEPALIVE_EXPERIMENTAL_CMD = true
 VERIFY_KEEPALIVE_CMD = true
+VERIFY_RUNTIME_BOUNDARY_CMD = true
+VERIFY_TRIPLE_THREAD_CMD = true
 PROBE_KEEPALIVE_CMD = true
 BENCH_HEALTH_CMD = true
 BENCH_INDEX_CMD = true
@@ -190,7 +196,7 @@ AS := as
 LD := ld
 BUILD_DIR := build
 
-.PHONY: all run verify verify-quiet verify-keepalive-experimental verify-keepalive probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet build-keepalive-experimental build-keepalive build-v2-runtime bench-native-keepalive-experimental bench-native-keepalive clean doctor platform
+.PHONY: all run verify verify-runtime-boundary verify-triple-thread verify-quiet verify-keepalive-experimental verify-keepalive probe-keepalive bench bench-long bench-cost bench-native bench-native-long bench-native-xl bench-native-xxl bench-native-lifecycle bench-native-nolog build-quiet bench-native-quiet build-keepalive-experimental build-keepalive build-v2-runtime bench-native-keepalive-experimental bench-native-keepalive clean doctor platform
 
 all: $(TARGET)
 
@@ -253,6 +259,12 @@ verify: all
 	$(VERIFY_ANY_CMD)
 	$(VERIFY_BADARG_CMD)
 	$(VERIFY_PREFLIGHT_CMD)
+
+verify-runtime-boundary:
+	$(VERIFY_RUNTIME_BOUNDARY_CMD)
+
+verify-triple-thread:
+	$(VERIFY_TRIPLE_THREAD_CMD)
 
 verify-quiet: all
 	$(VERIFY_QUIET_CMD)

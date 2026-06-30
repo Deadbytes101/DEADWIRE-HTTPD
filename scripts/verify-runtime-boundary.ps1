@@ -5,13 +5,16 @@ $AsmPath = Join-Path $Root 'src/deadwire_windows.s'
 $RoadmapPath = Join-Path $Root 'docs/v2-native-runtime-parity-roadmap.md'
 $ContractPath = Join-Path $Root 'docs/v2-runtime-boundary-contract.md'
 $SourceMapPath = Join-Path $Root 'docs/v2-source-boundary-map.md'
+$TriplePath = Join-Path $Root 'docs/v2-triple-thread-runtime.md'
+$BoundaryPath = Join-Path $Root 'docs/runtime-boundary.md'
 $RuntimeReadmePath = Join-Path $Root 'src/runtime/README.md'
 $WindowsBackendReadmePath = Join-Path $Root 'src/platform/windows/README.md'
 $RuntimeAnchorPath = Join-Path $Root 'src/runtime/boundary_anchors.txt'
 $AssemblyAnchorPath = Join-Path $Root 'src/runtime/boundary_anchors.asm.txt'
 $RuntimeWindowsSourcePath = Join-Path $Root 'src/runtime/runtime_windows.s'
+$SourceMapVerifierPath = Join-Path $Root 'scripts/verify-runtime-source-map.ps1'
 
-foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $RuntimeReadmePath, $WindowsBackendReadmePath, $RuntimeAnchorPath, $AssemblyAnchorPath, $RuntimeWindowsSourcePath)) {
+foreach ($Path in @($AsmPath, $RoadmapPath, $ContractPath, $SourceMapPath, $TriplePath, $BoundaryPath, $RuntimeReadmePath, $WindowsBackendReadmePath, $RuntimeAnchorPath, $AssemblyAnchorPath, $RuntimeWindowsSourcePath, $SourceMapVerifierPath)) {
     if (-not (Test-Path $Path)) {
         throw "missing file: $Path"
     }
@@ -21,6 +24,8 @@ $Asm = Get-Content -Raw -Encoding UTF8 $AsmPath
 $Roadmap = Get-Content -Raw -Encoding UTF8 $RoadmapPath
 $Contract = Get-Content -Raw -Encoding UTF8 $ContractPath
 $SourceMap = Get-Content -Raw -Encoding UTF8 $SourceMapPath
+$Triple = Get-Content -Raw -Encoding UTF8 $TriplePath
+$Boundary = Get-Content -Raw -Encoding UTF8 $BoundaryPath
 $RuntimeReadme = Get-Content -Raw -Encoding UTF8 $RuntimeReadmePath
 $WindowsBackendReadme = Get-Content -Raw -Encoding UTF8 $WindowsBackendReadmePath
 $RuntimeAnchor = Get-Content -Raw -Encoding UTF8 $RuntimeAnchorPath
@@ -42,7 +47,6 @@ $AsmNeedles = @(
     'call send_response',
     'call send_all'
 )
-
 foreach ($Needle in $AsmNeedles) {
     if (-not $Asm.Contains($Needle)) {
         throw "runtime boundary check failed: $Needle"
@@ -56,7 +60,6 @@ $RoadmapNeedles = @(
     'worker-pool accept dispatch',
     'benchmark proves scaling or the claim is not made'
 )
-
 foreach ($Needle in $RoadmapNeedles) {
     if (-not $Roadmap.Contains($Needle)) {
         throw "roadmap check failed: $Needle"
@@ -65,14 +68,38 @@ foreach ($Needle in $RoadmapNeedles) {
 
 $ContractNeedles = @(
     'NO BEHAVIOR CHANGE IN V2.0',
-    'NO THREADS YET',
     'runtime_handle_client(connection*)',
     'runtime_send_all(connection*, buffer, length)'
 )
-
 foreach ($Needle in $ContractNeedles) {
     if (-not $Contract.Contains($Needle)) {
         throw "contract check failed: $Needle"
+    }
+}
+
+$TripleNeedles = @(
+    'THREAD 0: SUPERVISOR',
+    'THREAD 1: ACCEPTOR',
+    'THREAD 2: HTTP ENGINE',
+    'This is not a worker pool.',
+    'This is not a thread-per-connection design.'
+)
+foreach ($Needle in $TripleNeedles) {
+    if (-not $Triple.Contains($Needle)) {
+        throw "triple-thread doc check failed: $Needle"
+    }
+}
+
+$BoundaryNeedles = @(
+    'lane 0: supervisor',
+    'lane 1: acceptor',
+    'lane 2: http_engine',
+    'make verify-runtime-boundary',
+    'make verify-triple-thread'
+)
+foreach ($Needle in $BoundaryNeedles) {
+    if (-not $Boundary.Contains($Needle)) {
+        throw "runtime boundary doc check failed: $Needle"
     }
 }
 
@@ -82,7 +109,6 @@ $SourceMapNeedles = @(
     'NO C SERVER GLUE',
     'NO THREADS BEFORE BOUNDARY'
 )
-
 foreach ($Needle in $SourceMapNeedles) {
     if (-not $SourceMap.Contains($Needle)) {
         throw "source boundary map check failed: $Needle"
@@ -117,6 +143,11 @@ foreach ($Needle in @('dw_runtime_main maps to mainCRTStartup', 'dw_runtime_hand
     if (-not $RuntimeWindowsSource.Contains($Needle)) {
         throw "runtime windows source check failed: $Needle"
     }
+}
+
+& $SourceMapVerifierPath
+if ($LASTEXITCODE -ne 0) {
+    throw "runtime source map verifier failed with exit code $LASTEXITCODE"
 }
 
 Write-Output 'verify-runtime-boundary: ok'
