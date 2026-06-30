@@ -34,6 +34,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2entry.ps1
     Check-Status 'verify-v2entry'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2flow.ps1
+    Check-Status 'verify-v2flow'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2spawn.ps1
     Check-Status 'verify-v2spawn'
 
