@@ -57,7 +57,9 @@ $RoadmapNeedles = @(
     'V2.0: Runtime Boundary',
     'custom native thread abstraction',
     'custom synchronization primitive layer',
-    'worker-pool accept dispatch',
+    'fixed triple-thread runtime',
+    'no worker pool',
+    'deadwire_v2_runtime.exe runs a live smoke path',
     'benchmark proves scaling or the claim is not made'
 )
 foreach ($Needle in $RoadmapNeedles) {
