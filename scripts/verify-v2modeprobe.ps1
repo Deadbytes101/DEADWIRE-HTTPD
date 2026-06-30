@@ -3,6 +3,9 @@ $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $ShapeProbe=Join-Path $R 'scripts/verify-v2lane-shape.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ShapeProbe
 if($LASTEXITCODE){throw "lane shape $LASTEXITCODE"}
+$AcceptorProbe=Join-Path $R 'scripts/verify-v2acceptorprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $AcceptorProbe
+if($LASTEXITCODE){throw "acceptor probe $LASTEXITCODE"}
 $HttpProbe=Join-Path $R 'scripts/verify-v2httpengineprobe.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HttpProbe
 if($LASTEXITCODE){throw "http engine probe $LASTEXITCODE"}
