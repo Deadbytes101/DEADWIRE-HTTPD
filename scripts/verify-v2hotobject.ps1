@@ -27,4 +27,7 @@ foreach($Name in @('dw_runtime_worker_take','dw_runtime_worker_complete')){
     $Body=ObjBlock $Name
     if($Body -match '\bcall\b'){throw "$Name object still has call"}
 }
+$Reloc=(& objdump -r $Obj) -join "`n"
+if($LASTEXITCODE){throw "hot object reloc $LASTEXITCODE"}
+if($Reloc -notmatch 'dw_runtime_select_route'){throw 'hot object missing route selector relocation'}
 Write-Output 'verify-v2hotobject: ok'
