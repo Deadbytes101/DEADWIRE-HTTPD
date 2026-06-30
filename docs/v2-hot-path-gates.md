@@ -34,6 +34,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime
 
 The benchmark exercises the generated hot runtime handoff path: input queue push, HTTP engine step, and output queue drain. It prints requests, seconds, ns/op, and ops/s for each round, then prints a median ns/op summary. Timing is informational; structural budgets remain enforced by the verify gates.
 
+See `docs/v2-runtime-microbench.md` for the first recorded local baseline.
+
 ## Rule
 
 If a hot helper grows, it must be intentional. The verifier should fail first, then the budget can be raised with a reason.
