@@ -1,11 +1,13 @@
 param(
     [int]$Requests = 262144,
-    [int]$Capacity = 1024
+    [int]$Capacity = 1024,
+    [int]$Rounds = 5
 )
 
 $ErrorActionPreference = 'Stop'
 if ($Requests -lt 1) { throw 'Requests must be >= 1' }
 if ($Capacity -lt 4) { throw 'Capacity must be >= 4' }
+if ($Rounds -lt 1) { throw 'Rounds must be >= 1' }
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $BuildDir = Join-Path $RepoRoot 'build'
@@ -82,5 +84,24 @@ $GccArgs = @(
 )
 & gcc @GccArgs
 if ($LASTEXITCODE) { throw "bench harness link failed $LASTEXITCODE" }
-& $HarnessExe
-if ($LASTEXITCODE) { throw "bench-v2-runtime failed $LASTEXITCODE" }
+
+$NsPerOpValues = @()
+for ($Round = 1; $Round -le $Rounds; $Round++) {
+    $Output = & $HarnessExe
+    if ($LASTEXITCODE) { throw "bench-v2-runtime failed $LASTEXITCODE" }
+    $Output | ForEach-Object { Write-Output $_ }
+    $Text = $Output -join "`n"
+    $Match = [regex]::Match($Text, 'ns/op=([0-9.]+)')
+    if (!$Match.Success) { throw 'bench output missing ns/op' }
+    $NsPerOpValues += [double]$Match.Groups[1].Value
+}
+
+$SortedNs = $NsPerOpValues | Sort-Object
+$Middle = [int]($SortedNs.Count / 2)
+if (($SortedNs.Count % 2) -eq 0) {
+    $MedianNs = ($SortedNs[$Middle - 1] + $SortedNs[$Middle]) / 2.0
+} else {
+    $MedianNs = $SortedNs[$Middle]
+}
+
+Write-Output ("bench-v2-runtime-summary: rounds={0} median-ns/op={1:N2}" -f $Rounds, $MedianNs)

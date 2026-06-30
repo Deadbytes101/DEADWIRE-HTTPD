@@ -29,10 +29,10 @@ These gates are chained from `scripts/verify-v2final.ps1`, which is reached by `
 Run the V2 handoff microbench on Windows:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime.ps1 -Requests 262144
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime.ps1 -Requests 262144 -Rounds 5
 ```
 
-The benchmark exercises the generated hot runtime handoff path: input queue push, HTTP engine step, and output queue drain. It prints requests, seconds, ns/op, and ops/s. Timing is informational; structural budgets remain enforced by the verify gates.
+The benchmark exercises the generated hot runtime handoff path: input queue push, HTTP engine step, and output queue drain. It prints requests, seconds, ns/op, and ops/s for each round, then prints a median ns/op summary. Timing is informational; structural budgets remain enforced by the verify gates.
 
 ## Rule
 
