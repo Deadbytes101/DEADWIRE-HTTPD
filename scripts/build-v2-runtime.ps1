@@ -10,7 +10,7 @@ $HttpEntryPath = Join-Path $RepoRoot 'src/runtime/runtime_http_engine_entry_wind
 $ExtraPath = Join-Path $RepoRoot 'src/runtime/runtime_handle_windows.s'
 $JoinPath = Join-Path $RepoRoot 'src/runtime/runtime_join_windows.s'
 $RunPath = Join-Path $RepoRoot 'src/runtime/runtime_run_windows.s'
-$BootPath = Join-Path $RepoRoot 'src/runtime/runtime_boot_windows.s'
+$BootPath = Join-Path $RepoRoot 'src/runtime/runtime_boot_windows.c'
 $LivePath = Join-Path $RepoRoot 'src/runtime/runtime_live_windows.s'
 $LiveClosePath = Join-Path $RepoRoot 'src/runtime/runtime_live_close_windows.s'
 $LiveCyclePath = Join-Path $RepoRoot 'src/runtime/runtime_live_cycle_windows.s'
@@ -92,8 +92,8 @@ if ($LASTEXITCODE -ne 0) { throw "V2 bound assembly failed with exit code $LASTE
 & as --64 -o $ModeObjectPath $ModePath
 if ($LASTEXITCODE -ne 0) { throw "V2 mode assembly failed with exit code $LASTEXITCODE" }
 
-& as --64 -o $BootObjectPath $BootPath
-if ($LASTEXITCODE -ne 0) { throw "V2 runtime boot assembly failed with exit code $LASTEXITCODE" }
+& gcc -ffreestanding -fno-builtin -fno-stack-protector -c -o $BootObjectPath $BootPath
+if ($LASTEXITCODE -ne 0) { throw "V2 runtime boot compile failed with exit code $LASTEXITCODE" }
 
 & gcc -nostdlib '-Wl,-e,mainCRTStartup' '-Wl,--subsystem,console' -o $ExePath $BootObjectPath $RuntimeObjectPath $LaneSetObjectPath $HttpEntryObjectPath $ExtraObjectPath $JoinObjectPath $RunObjectPath $LiveObjectPath $LiveCloseObjectPath $LiveCycleObjectPath $AcceptObjectPath $BridgeObjectPath $TickObjectPath $BoundObjectPath $ModeObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) { throw "V2 runtime link failed with exit code $LASTEXITCODE" }
