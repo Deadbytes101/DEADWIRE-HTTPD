@@ -40,6 +40,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2set.ps1
     Check-Status 'verify-v2set'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2build.ps1
+    Check-Status 'verify-v2build'
+
     make verify
     Check-Status 'make verify'
 
