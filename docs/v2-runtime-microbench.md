@@ -12,6 +12,14 @@ This is a local runtime microbench, not an external HTTP server benchmark.
 
 ## Command
 
+Preferred command:
+
+```powershell
+make bench-v2-runtime
+```
+
+Direct script command:
+
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/bench-v2-runtime.ps1 -Requests 262144 -Rounds 5
 ```
