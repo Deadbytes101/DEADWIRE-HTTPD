@@ -55,6 +55,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2boot.ps1
     Check-Status 'verify-v2boot'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2live.ps1
+    Check-Status 'verify-v2live'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2build.ps1
     Check-Status 'verify-v2build'
 
