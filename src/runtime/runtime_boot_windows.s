@@ -6,6 +6,7 @@
 
 .extern dw_runtime_worker_init
 .extern dw_runtime_run_lanes
+.extern dw_runtime_mode_bound
 .extern ExitProcess
 
 .equ DW_QUEUE_HEAD, 0
@@ -27,6 +28,24 @@
 .equ DW_SPAWN_WORK_HANDLE, 56
 .equ DW_SPAWN_OUTPUT_HANDLE, 64
 .equ DW_SPAWN_LAST_RESULT, 72
+.equ DW_LIVE_SOCKET, 0
+.equ DW_LIVE_SOCKADDR_PTR, 8
+.equ DW_LIVE_SOCKADDR_LEN, 16
+.equ DW_LIVE_BACKLOG, 24
+.equ DW_LIVE_LAST_RESULT, 32
+.equ DW_TICK_LIVE_CONTEXT_PTR, 0
+.equ DW_TICK_CLIENT_CONTEXT_PTR, 8
+.equ DW_TICK_INPUT_QUEUE_PTR, 16
+.equ DW_TICK_WORKER_PTR, 24
+.equ DW_TICK_OUTPUT_QUEUE_PTR, 32
+.equ DW_TICK_OUTPUT_CLIENT_PTR, 40
+.equ DW_TICK_LAST_RESULT, 48
+.equ DW_BOUND_TICK_CONTEXT_PTR, 0
+.equ DW_BOUND_COUNT, 8
+.equ DW_BOUND_COMPLETED, 16
+.equ DW_BOUND_LAST_RESULT, 24
+.equ DW_MODE_BOUND_CONTEXT_PTR, 0
+.equ DW_MODE_LAST_RESULT, 8
 
 .section .data
 .align 8
@@ -61,6 +80,28 @@ client_ctx:
     .quad 0
     .quad 0
     .quad 0
+live_ctx:
+    .quad 0
+    .quad 0
+    .quad 0
+    .quad 0
+    .quad 0
+tick_ctx:
+    .quad live_ctx
+    .quad client_ctx
+    .quad input_queue
+    .quad worker_ctx
+    .quad output_queue
+    .quad 0
+    .quad 99
+bound_ctx:
+    .quad tick_ctx
+    .quad 0
+    .quad 99
+    .quad 99
+mode_ctx:
+    .quad bound_ctx
+    .quad 99
 accept_entry_ctx:
     .quad input_queue
     .quad 0
@@ -113,6 +154,11 @@ mainCRTStartup:
 
     lea rcx, [rip + spawn_ctx]
     call dw_runtime_run_lanes
+    test eax, eax
+    jne boot_fail
+
+    lea rcx, [rip + mode_ctx]
+    call dw_runtime_mode_bound
     test eax, eax
     jne boot_fail
 
