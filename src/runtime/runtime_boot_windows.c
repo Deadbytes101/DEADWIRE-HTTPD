@@ -59,6 +59,50 @@ static void deadwire_close_socket_if_real(SOCKET socket_value) {
     }
 }
 
+static void deadwire_close_client_socket(void) {
+    deadwire_close_socket_if_real((SOCKET)client_context[0]);
+    client_context[0] = (uint64_t)DEADWIRE_SENTINEL_SOCKET;
+}
+
+static void deadwire_close_peer_socket(SOCKET *socket_value) {
+    if (*socket_value != INVALID_SOCKET) {
+        closesocket(*socket_value);
+        *socket_value = INVALID_SOCKET;
+    }
+}
+
+static int deadwire_shutdown_live(void) {
+    if (dw_runtime_live_close(live_context)) {
+        return 0;
+    }
+
+    if (live_context[0] != 0 || live_context[4] != 0) {
+        return 0;
+    }
+
+    if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET) {
+        return 0;
+    }
+
+    if (dw_runtime_live_close(live_context)) {
+        return 0;
+    }
+
+    if (live_context[0] != 0 || live_context[4] != 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int deadwire_finish_with_shutdown(int result_code, int shutdown_failure_code) {
+    if (!deadwire_shutdown_live()) {
+        return shutdown_failure_code;
+    }
+
+    return result_code;
+}
+
 static void deadwire_prepare_tick(void) {
     client_context[0] = (uint64_t)DEADWIRE_SENTINEL_SOCKET;
     client_context[1] = (uint64_t)request_buffer;
@@ -88,57 +132,60 @@ static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int reques
     }
 
     if (connect(peer_socket, (struct sockaddr *)bound_addr, sizeof(*bound_addr))) {
-        closesocket(peer_socket);
+        deadwire_close_peer_socket(&peer_socket);
         return 30 + request_index;
     }
 
     if (send(peer_socket, smoke_request, (int)(sizeof(smoke_request) - 1), 0) != (int)(sizeof(smoke_request) - 1)) {
-        closesocket(peer_socket);
+        deadwire_close_peer_socket(&peer_socket);
         return 40 + request_index;
     }
 
     if (dw_runtime_mode_bound(mode_context)) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 50 + request_index;
     }
 
     received = recv(peer_socket, response_buffer, (int)(sizeof(response_buffer) - 1), 0);
     if (received <= 0) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 60 + request_index;
     }
     response_buffer[received] = 0;
 
     if (!deadwire_contains(response_buffer, received, smoke_status, (int)(sizeof(smoke_status) - 1))) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 70 + request_index;
     }
 
     if (!deadwire_contains(response_buffer, received, smoke_body, (int)(sizeof(smoke_body) - 1))) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 80 + request_index;
     }
 
     if (mode_context[1] != 0 || bound_context[2] != 1 || bound_context[3] != 0 || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 90 + request_index;
     }
 
     expected_cursor = (uint64_t)((request_index + 1) % DEADWIRE_QUEUE_CAPACITY);
     if (worker_context[4] != (uint64_t)(request_index + 1) || input_queue[0] != expected_cursor || input_queue[1] != expected_cursor || output_queue[0] != expected_cursor || output_queue[1] != expected_cursor) {
-        deadwire_close_socket_if_real((SOCKET)client_context[0]);
-        closesocket(peer_socket);
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
         return 100 + request_index;
     }
 
-    deadwire_close_socket_if_real((SOCKET)client_context[0]);
-    client_context[0] = (uint64_t)DEADWIRE_SENTINEL_SOCKET;
-    closesocket(peer_socket);
+    deadwire_close_client_socket();
+    deadwire_close_peer_socket(&peer_socket);
+
+    if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET || peer_socket != INVALID_SOCKET) {
+        return 110 + request_index;
+    }
 
     return 0;
 }
@@ -193,6 +240,8 @@ static int deadwire_v2_live_smoke(void) {
     mode_context[0] = (uint64_t)bound_context;
     mode_context[1] = 99;
 
+    deadwire_prepare_tick();
+
     if (dw_runtime_worker_init(worker_context, 7, input_queue, output_queue)) {
         return 1;
     }
@@ -202,28 +251,25 @@ static int deadwire_v2_live_smoke(void) {
     }
 
     if (getsockname((SOCKET)live_context[0], (struct sockaddr *)&bound_addr, &bound_len)) {
-        dw_runtime_live_close(live_context);
-        return 3;
+        return deadwire_finish_with_shutdown(3, 130);
     }
 
     for (i = 0; i < DEADWIRE_SMOKE_REQUESTS; ++i) {
         result = deadwire_run_smoke_request(&bound_addr, i);
         if (result) {
-            dw_runtime_live_close(live_context);
-            return result;
+            return deadwire_finish_with_shutdown(result, 131);
         }
     }
 
     if (input_queue[0] != 0 || input_queue[1] != 0 || output_queue[0] != 0 || output_queue[1] != 0 || worker_context[4] != DEADWIRE_SMOKE_REQUESTS) {
-        dw_runtime_live_close(live_context);
-        return 120;
+        return deadwire_finish_with_shutdown(120, 132);
     }
 
-    if (dw_runtime_live_close(live_context)) {
-        return 121;
+    if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
+        return deadwire_finish_with_shutdown(121, 133);
     }
 
-    return 0;
+    return deadwire_finish_with_shutdown(0, 134);
 }
 
 void mainCRTStartup(void) {

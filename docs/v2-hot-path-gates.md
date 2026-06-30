@@ -43,6 +43,8 @@ This is not a public server benchmark. It is a local runtime handoff measurement
 
 That executable opens loopback, sends four GET requests one by one, runs bounded V2 mode for each request, checks each HTTP 200 response and body, proves the queue cursor wraps back to zero, closes sockets, and exits nonzero on failure.
 
+The shutdown proof checks that the live socket is reset, the live close result is zero, the accepted client socket returns to the sentinel value, and a second live close remains clean.
+
 ## Rule
 
 If a hot helper grows, it must be intentional. The verifier should fail first, then the budget can be raised with a reason.
