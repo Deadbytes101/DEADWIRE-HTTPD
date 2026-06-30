@@ -1,27 +1,37 @@
 # V2 NATIVE RUNTIME PARITY ROADMAP
 
-DEADWIRE HTTPD V1.3.0 is released, but it is not yet a technical peer of a serious pure-native assembly server.
+DEADWIRE HTTPD V1.3.0 is released. The default server path is still the small blocking HTTP/1.0 server.
 
-This roadmap defines the work required to move DEADWIRE from a small blocking static-file server into a real native-runtime HTTP server.
+V2 is the opt-in native runtime track. It does not get to claim victory because a file exists. It earns the claim by running, failing loudly, and staying measurable.
 
 ## Truth
 
 ```txt
-CURRENT STATE:
-- blocking, single-threaded request path
-- explicit platform backends
-- Windows x86-64 assembly path with WinSock2 + Kernel32
-- C benchmark tool exists only as tooling
-- PowerShell exists only as build/verify glue
-- keep-alive is opt-in and sequential
+DEFAULT PRODUCT STATE:
+- close-after-response server remains the default path
+- Windows x86-64 assembly path still owns the default server
+- Linux and macOS paths remain explicit platform backends
+- keep-alive remains opt-in and sequential
+```
 
-NOT YET TRUE:
-- no custom threading runtime
-- no custom mutex/futex-style synchronization layer
+```txt
+CURRENT V2 PROOF:
+- fixed triple-thread runtime shape: supervisor / acceptor / HTTP engine
 - no worker pool
-- no accept dispatch architecture
-- no pure assembly build across the whole product surface
+- no thread-per-connection design
+- V2 request step takes one queued client, runs the HTTP handler, and completes it
+- V2 tick path accepts a loopback client and routes through the request step
+- deadwire_v2_runtime.exe runs a live smoke path and exits nonzero on failure
+- make verify-triple-thread reaches verify-v2final and executes the V2 runtime exe
+```
+
+```txt
+NOT YET TRUE:
+- default server does not run on the V2 runtime yet
+- no long-running V2 listener mode yet
 - no multicore scaling claim
+- no public internet hardening claim
+- no TLS, CGI, async, or framework layer
 ```
 
 ## Target
@@ -29,33 +39,36 @@ NOT YET TRUE:
 ```txt
 TARGET STATE:
 - assembly-first product core
-- no C glue in server runtime
+- fixed triple-thread runtime
 - custom native thread abstraction
 - custom synchronization primitive layer
-- worker-pool accept dispatch
+- acceptor owns socket intake
+- HTTP engine owns request parsing and response
 - connection lifecycle owned by DEADWIRE runtime
 - deterministic local benchmark harness
 - claims backed by tests and measurements
 ```
 
-The goal is not to cosplay another server. The goal is to earn comparable technical weight through DEADWIRE's own architecture.
+No cosplay. No borrowed glory. The machine either does it or it does not.
 
 ## Architecture Target
 
 ```mermaid
 flowchart LR
-    MAIN["MAIN ENTRY"] --> RUNTIME["DEADWIRE RUNTIME INIT"]
-    RUNTIME --> NET["PLATFORM NET BACKEND"]
-    NET --> ACCEPT["ACCEPT LOOP"]
-    ACCEPT --> QUEUE["CONNECTION QUEUE"]
-    QUEUE --> WAKE["WAKE WORKER"]
-    WAKE --> WORKER["WORKER THREAD"]
-    WORKER --> PARSE["REQUEST PARSER"]
+    MAIN["MAIN ENTRY"] --> SUP["SUPERVISOR"]
+    SUP --> INIT["RUNTIME INIT"]
+    INIT --> ACC["ACCEPTOR LANE"]
+    INIT --> HTTP["HTTP ENGINE LANE"]
+    ACC --> ACCEPT["ACCEPT CLIENT"]
+    ACCEPT --> HANDOFF["FIXED HANDOFF / QUEUE"]
+    HANDOFF --> HTTP
+    HTTP --> RECV["RECV REQUEST"]
+    RECV --> PARSE["REQUEST PARSER"]
     PARSE --> GUARD["PATH GUARD"]
-    GUARD --> FILE["STATIC FILE OR HEALTH"]
-    FILE --> RESPONSE["RESPONSE BUILDER"]
+    GUARD --> ROUTE["ROUTE"]
+    ROUTE --> RESPONSE["RESPONSE BUILDER"]
     RESPONSE --> SEND["SEND ALL"]
-    SEND --> CLOSE["CLOSE OR KEEP-ALIVE"]
+    SEND --> CLOSE["CLOSE OR EXPLICIT POLICY"]
 ```
 
 ## Milestones
@@ -66,7 +79,7 @@ flowchart LR
 - split server runtime from platform backend
 - define assembly-call ABI for runtime functions
 - isolate startup, socket, request, file, response, and shutdown boundaries
-- remove accidental coupling between build scripts and server behavior
+- keep default server behavior unchanged
 ```
 
 Pass condition:
@@ -76,94 +89,113 @@ make verify
 make verify-runtime-boundary
 ```
 
-### V2.1: Thread Runtime
+Status:
 
 ```txt
-- add native thread creation wrapper per platform
-- Windows: CreateThread or lower-level documented native path if justified
-- Linux: clone path only when tests prove ABI safety
-- worker function ABI frozen
-- deterministic worker startup/shutdown tests
+DONE ENOUGH TO MOVE FORWARD.
+```
+
+### V2.1: Fixed Runtime Topology
+
+```txt
+- supervisor owns lifetime
+- acceptor lane owns intake
+- HTTP engine lane owns request work
+- no output lane as a fourth runtime thread
+- no worker pool
+- no thread-per-connection design
 ```
 
 Pass condition:
 
 ```txt
-worker starts
-worker receives job
-worker exits cleanly
-no leaked handles in local tests
+make verify-triple-thread
 ```
 
-### V2.2: Synchronization Layer
+Status:
 
 ```txt
-- implement DEADWIRE mutex abstraction
-- implement condition/wake abstraction
-- Windows candidate: WaitOnAddress/WakeByAddressSingle or event-backed fallback
-- Linux candidate: futex syscall path
-- no busy-spin default path
-- timeout and shutdown behavior tested
+ACTIVE AND ENFORCED BY SHAPE PROBES.
 ```
 
-Pass condition:
+### V2.2: Request Step
 
 ```txt
-mutex lock/unlock stress passes
-wake-one and wake-all tests pass
-shutdown cannot deadlock
-```
-
-### V2.3: Connection Queue
-
-```txt
-- fixed-capacity MPSC or locked ring queue
-- accept loop pushes accepted sockets
-- worker pool pops sockets
-- queue full policy explicit
-- graceful close on rejected connection
+- queued client enters HTTP request step
+- request step calls the runtime HTTP handler
+- completed client exits through output queue
+- live loopback request probe checks HTTP 200 and body
 ```
 
 Pass condition:
 
 ```txt
-queue order is testable
-queue full behavior is deterministic
-workers cannot double-own a socket
+make verify-triple-thread
 ```
 
-### V2.4: Worker Pool Server
+Status:
 
 ```txt
-- main thread owns accept loop
-- workers own request parsing and response
-- close-after-response default preserved
-- keep-alive policy remains explicit
-- local multicore benchmark introduced
+ACTIVE AND CHAINED INTO VERIFY.
 ```
 
-Pass condition:
+### V2.3: Executable Live Smoke
 
 ```txt
-single-worker mode matches V1 behavior
-multi-worker mode passes parser/path/io/response tests
-benchmark proves scaling or the claim is not made
-```
-
-### V2.5: Assembly-Only Product Runtime
-
-```txt
-- server runtime contains no C glue
-- C remains allowed only for external benchmark tools
-- generated assembly is reviewed or treated as build artifact only
-- source layout makes product/runtime/tooling separation obvious
+- build/deadwire_v2_runtime.exe opens a loopback listener
+- local peer sends one GET request
+- bounded V2 mode processes the request
+- response status and body are checked
+- sockets close cleanly
+- process exits nonzero on failure
 ```
 
 Pass condition:
 
 ```txt
-language stats reflect product core
-runtime source audit finds no C server glue
+make build-v2-runtime
+.\build\deadwire_v2_runtime.exe
+make verify-triple-thread
+```
+
+Status:
+
+```txt
+ACTIVE. VERIFY-V2FINAL RUNS THE EXE.
+```
+
+### V2.4: Long-Running V2 Mode
+
+```txt
+- opt-in executable can run a bounded listener loop
+- shutdown path is explicit
+- errors have stable exit codes
+- default server still untouched until parity is proven
+```
+
+Pass condition:
+
+```txt
+local smoke passes
+bounded multi-request test passes
+no leaked socket handle in local probe
+```
+
+### V2.5: Default Server Parity Gate
+
+```txt
+- V2 path preserves V1 behavior for /health, /, /hello.txt, /style.css, missing files, method rejection, and path guard
+- close-after-response remains default
+- keep-alive stays explicit
+- benchmark proves scaling or the claim is not made
+```
+
+Pass condition:
+
+```txt
+make verify
+make verify-triple-thread
+V1/V2 parity probes pass
 release notes do not overclaim
 ```
 
@@ -190,11 +222,9 @@ NO RUNTIME MAGIC THAT CANNOT BE EXPLAINED AT THE ABI LEVEL.
 
 ## Immediate Next Step
 
-Start V2.0 by creating a runtime boundary without changing behavior.
-
 ```txt
-FIRST PATCH:
-- document runtime/backend split
-- add tests that prove current behavior is preserved
-- keep V1.3.0 release untouched
+NEXT PATCH:
+- document the current V2 executable proof
+- keep default server wording honest
+- do not claim public server performance from the local V2 microbench
 ```
