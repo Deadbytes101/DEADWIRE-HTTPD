@@ -7,6 +7,7 @@ extern int dw_runtime_worker_init(uint64_t *worker, uint64_t id, uint64_t *input
 extern int dw_runtime_live_open(uint64_t *live_context);
 extern int dw_runtime_live_close(uint64_t *live_context);
 extern int dw_runtime_mode_bound(uint64_t *mode_context);
+extern int dw_runtime_select_route(const char *request, int request_length);
 
 #define DEADWIRE_SMOKE_REQUESTS 8
 #define DEADWIRE_QUEUE_CAPACITY 4
@@ -197,51 +198,6 @@ static int deadwire_response_has_body(const char *buffer, int length) {
     return 1;
 }
 
-static int deadwire_request_path_is(const char *request, int request_length, const char *path, int path_length) {
-    int i;
-    int path_start;
-
-    if (!request || !path || request_length <= 0 || path_length <= 0) {
-        return 0;
-    }
-
-    path_start = -1;
-    for (i = 0; i < request_length; ++i) {
-        if (request[i] == ' ') {
-            path_start = i + 1;
-            break;
-        }
-    }
-
-    if (path_start < 0 || path_start + path_length >= request_length) {
-        return 0;
-    }
-
-    for (i = 0; i < path_length; ++i) {
-        if (request[path_start + i] != path[i]) {
-            return 0;
-        }
-    }
-
-    return request[path_start + path_length] == ' ';
-}
-
-static int deadwire_select_route(const char *request, int request_length) {
-    if (deadwire_request_path_is(request, request_length, "/health", 7)) {
-        return DEADWIRE_ROUTE_HEALTH;
-    }
-
-    if (deadwire_request_path_is(request, request_length, "/", 1)) {
-        return DEADWIRE_ROUTE_ROOT;
-    }
-
-    if (deadwire_request_path_is(request, request_length, "/style.css", 10)) {
-        return DEADWIRE_ROUTE_CSS;
-    }
-
-    return DEADWIRE_ROUTE_MISSING;
-}
-
 static void deadwire_set_response(const char *status, int status_length, const char *content_type, int content_type_length, const char *body, int body_length) {
     response_context[0] = (uint64_t)status;
     response_context[1] = (uint64_t)status_length;
@@ -372,7 +328,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         request_length = (int)(sizeof(css_get_request) - 1);
     }
 
-    selected_route = deadwire_select_route(request, request_length);
+    selected_route = dw_runtime_select_route(request, request_length);
     expected_status = health_status;
     expected_status_length = (int)(sizeof(health_status) - 1);
     expected_type_line = text_type_line;
