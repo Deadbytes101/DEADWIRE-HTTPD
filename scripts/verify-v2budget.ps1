@@ -14,7 +14,7 @@ function InstructionCount([string]$Name){
     $B=Block $Name
     return ([regex]::Matches($B,'(?m)^\s*[0-9a-fA-F]+:\s+')).Count
 }
-$Budget=@{
+$Budget=[ordered]@{
     'dw_runtime_accept_enqueue'=3
     'dw_runtime_output_drain'=3
     'dw_runtime_worker_take'=48
@@ -24,6 +24,7 @@ $Budget=@{
 foreach($Name in $Budget.Keys){
     $Count=InstructionCount $Name
     $Max=$Budget[$Name]
+    Write-Output ("v2budget: {0} {1}/{2}" -f $Name,$Count,$Max)
     if($Count -gt $Max){throw "$Name instruction budget $Count > $Max"}
 }
 Write-Output 'verify-v2budget: ok'
