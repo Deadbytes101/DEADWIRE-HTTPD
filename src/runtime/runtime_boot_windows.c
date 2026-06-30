@@ -31,9 +31,11 @@ static uint64_t response_context[6];
 static char request_buffer[512];
 static char response_buffer[1024];
 
-static const char health_request[] = "GET /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+static const char health_get_request[] = "GET /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+static const char health_head_request[] = "HEAD /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
 static const char health_status[] = "HTTP/1.0 200 OK\r\n";
 static const char health_connection[] = "Connection: close\r\n";
+static const char health_type_line[] = "Content-Type: text/plain\r\n";
 static const char health_length[] = "Content-Length: 13\r\n";
 static const char health_type[] = "text/plain";
 static const char health_body[] = "deadwire: ok\n";
@@ -58,6 +60,22 @@ static int deadwire_contains(const char *buffer, int length, const char *needle,
     }
 
     return 0;
+}
+
+static int deadwire_response_has_body(const char *buffer, int length) {
+    int i;
+
+    if (!buffer || length < 4) {
+        return 1;
+    }
+
+    for (i = 0; i <= length - 4; ++i) {
+        if (buffer[i] == '\r' && buffer[i + 1] == '\n' && buffer[i + 2] == '\r' && buffer[i + 3] == '\n') {
+            return (i + 4) < length;
+        }
+    }
+
+    return 1;
 }
 
 static void deadwire_close_socket_if_real(SOCKET socket_value) {
@@ -146,10 +164,17 @@ static void deadwire_prepare_long_mode(void) {
 
 static int deadwire_run_health_request(struct sockaddr_in *bound_addr, int request_index) {
     SOCKET peer_socket = INVALID_SOCKET;
+    const char *request;
+    int request_length;
+    int expect_body;
     int received;
     uint64_t expected_cursor;
 
     deadwire_prepare_tick();
+
+    expect_body = (request_index & 1) == 0;
+    request = expect_body ? health_get_request : health_head_request;
+    request_length = expect_body ? (int)(sizeof(health_get_request) - 1) : (int)(sizeof(health_head_request) - 1);
 
     peer_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (peer_socket == INVALID_SOCKET) {
@@ -161,7 +186,7 @@ static int deadwire_run_health_request(struct sockaddr_in *bound_addr, int reque
         return 30 + request_index;
     }
 
-    if (send(peer_socket, health_request, (int)(sizeof(health_request) - 1), 0) != (int)(sizeof(health_request) - 1)) {
+    if (send(peer_socket, request, request_length, 0) != request_length) {
         deadwire_close_peer_socket(&peer_socket);
         return 40 + request_index;
     }
@@ -192,16 +217,28 @@ static int deadwire_run_health_request(struct sockaddr_in *bound_addr, int reque
         return 75 + request_index;
     }
 
+    if (!deadwire_contains(response_buffer, received, health_type_line, (int)(sizeof(health_type_line) - 1))) {
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
+        return 77 + request_index;
+    }
+
     if (!deadwire_contains(response_buffer, received, health_length, (int)(sizeof(health_length) - 1))) {
         deadwire_close_client_socket();
         deadwire_close_peer_socket(&peer_socket);
         return 76 + request_index;
     }
 
-    if (!deadwire_contains(response_buffer, received, health_body, (int)(sizeof(health_body) - 1))) {
+    if (expect_body) {
+        if (!deadwire_contains(response_buffer, received, health_body, (int)(sizeof(health_body) - 1))) {
+            deadwire_close_client_socket();
+            deadwire_close_peer_socket(&peer_socket);
+            return 80 + request_index;
+        }
+    } else if (deadwire_response_has_body(response_buffer, received)) {
         deadwire_close_client_socket();
         deadwire_close_peer_socket(&peer_socket);
-        return 80 + request_index;
+        return 85 + request_index;
     }
 
     if (mode_context[1] != 0 || bound_context[2] != 1 || bound_context[3] != 0 || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
