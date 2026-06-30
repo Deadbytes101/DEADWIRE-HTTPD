@@ -73,6 +73,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2bound.ps1
     Check-Status 'verify-v2bound'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2mode.ps1
+    Check-Status 'verify-v2mode'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2build.ps1
     Check-Status 'verify-v2build'
 
