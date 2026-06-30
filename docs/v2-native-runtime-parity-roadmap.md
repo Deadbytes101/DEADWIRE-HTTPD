@@ -22,6 +22,7 @@ CURRENT V2 PROOF:
 - V2 request step takes one queued client, runs the HTTP handler, and completes it
 - V2 tick path accepts a loopback client and routes through the request step
 - deadwire_v2_runtime.exe runs a bounded multi-request live smoke path and exits nonzero on failure
+- V2 health parity probe checks the narrow V1 /health response shape
 - V2 bounded smoke loop tracks target count, completed count, and last result
 - V2 long-mode controller tracks target count, completed count, stop reason, last result, and shutdown result
 - V2 shutdown checks live socket reset, accepted socket sentinel reset, and idempotent live close
@@ -32,6 +33,7 @@ CURRENT V2 PROOF:
 NOT YET TRUE:
 - default server does not run on the V2 runtime yet
 - no unbounded V2 listener mode yet
+- no full V1/V2 route parity yet
 - no multicore scaling claim
 - no public internet hardening claim
 - no TLS, CGI, async, or framework layer
@@ -243,7 +245,31 @@ Status:
 ACTIVE AS A BOUNDED OPT-IN LONG-MODE PROOF. NOT A DEFAULT SERVER CLAIM.
 ```
 
-### V2.7: Default Server Parity Gate
+### V2.7: Health Parity Probe
+
+```txt
+- V2 live smoke sends GET /health
+- response status must match the V1 health success shape
+- connection-close and content-length headers are checked
+- response body must match the V1 health body
+- this is not full route parity
+```
+
+Pass condition:
+
+```txt
+make build-v2-runtime
+.\build\deadwire_v2_runtime.exe
+make verify-triple-thread
+```
+
+Status:
+
+```txt
+ACTIVE AS A NARROW /HEALTH PARITY PROBE. NOT A FULL DEFAULT SERVER PARITY CLAIM.
+```
+
+### V2.8: Default Server Parity Gate
 
 ```txt
 - V2 path preserves V1 behavior for /health, /, /hello.txt, /style.css, missing files, method rejection, and path guard
@@ -286,7 +312,7 @@ NO RUNTIME MAGIC THAT CANNOT BE EXPLAINED AT THE ABI LEVEL.
 
 ```txt
 NEXT PATCH:
-- move from long-mode proof to V1/V2 parity probes
+- add the next narrow V1/V2 parity probe
 - keep default server wording honest
-- do not claim public server performance from the local V2 microbench
+- do not claim full parity until route probes pass
 ```

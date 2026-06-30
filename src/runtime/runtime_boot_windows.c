@@ -31,10 +31,12 @@ static uint64_t response_context[6];
 static char request_buffer[512];
 static char response_buffer[1024];
 
-static const char smoke_request[] = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
-static const char smoke_status[] = "HTTP/1.1 200 OK\r\n";
-static const char smoke_type[] = "text/plain";
-static const char smoke_body[] = "V2 RUNTIME OK";
+static const char health_request[] = "GET /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+static const char health_status[] = "HTTP/1.0 200 OK\r\n";
+static const char health_connection[] = "Connection: close\r\n";
+static const char health_length[] = "Content-Length: 13\r\n";
+static const char health_type[] = "text/plain";
+static const char health_body[] = "deadwire: ok\n";
 
 static int deadwire_contains(const char *buffer, int length, const char *needle, int needle_length) {
     int i;
@@ -142,7 +144,7 @@ static void deadwire_prepare_long_mode(void) {
     long_context[4] = 99;
 }
 
-static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int request_index) {
+static int deadwire_run_health_request(struct sockaddr_in *bound_addr, int request_index) {
     SOCKET peer_socket = INVALID_SOCKET;
     int received;
     uint64_t expected_cursor;
@@ -159,7 +161,7 @@ static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int reques
         return 30 + request_index;
     }
 
-    if (send(peer_socket, smoke_request, (int)(sizeof(smoke_request) - 1), 0) != (int)(sizeof(smoke_request) - 1)) {
+    if (send(peer_socket, health_request, (int)(sizeof(health_request) - 1), 0) != (int)(sizeof(health_request) - 1)) {
         deadwire_close_peer_socket(&peer_socket);
         return 40 + request_index;
     }
@@ -178,13 +180,25 @@ static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int reques
     }
     response_buffer[received] = 0;
 
-    if (!deadwire_contains(response_buffer, received, smoke_status, (int)(sizeof(smoke_status) - 1))) {
+    if (!deadwire_contains(response_buffer, received, health_status, (int)(sizeof(health_status) - 1))) {
         deadwire_close_client_socket();
         deadwire_close_peer_socket(&peer_socket);
         return 70 + request_index;
     }
 
-    if (!deadwire_contains(response_buffer, received, smoke_body, (int)(sizeof(smoke_body) - 1))) {
+    if (!deadwire_contains(response_buffer, received, health_connection, (int)(sizeof(health_connection) - 1))) {
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
+        return 75 + request_index;
+    }
+
+    if (!deadwire_contains(response_buffer, received, health_length, (int)(sizeof(health_length) - 1))) {
+        deadwire_close_client_socket();
+        deadwire_close_peer_socket(&peer_socket);
+        return 76 + request_index;
+    }
+
+    if (!deadwire_contains(response_buffer, received, health_body, (int)(sizeof(health_body) - 1))) {
         deadwire_close_client_socket();
         deadwire_close_peer_socket(&peer_socket);
         return 80 + request_index;
@@ -213,14 +227,14 @@ static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int reques
     return 0;
 }
 
-static int deadwire_run_bounded_smoke_loop(struct sockaddr_in *bound_addr) {
+static int deadwire_run_bounded_health_loop(struct sockaddr_in *bound_addr) {
     int i;
     int result;
 
     deadwire_prepare_loop();
 
     for (i = 0; i < DEADWIRE_SMOKE_REQUESTS; ++i) {
-        result = deadwire_run_smoke_request(bound_addr, i);
+        result = deadwire_run_health_request(bound_addr, i);
         if (result) {
             loop_context[2] = (uint64_t)result;
             return result;
@@ -257,7 +271,7 @@ static int deadwire_run_long_mode(struct sockaddr_in *server_addr) {
         return deadwire_finish_long_mode(3, 130);
     }
 
-    result = deadwire_run_bounded_smoke_loop(&bound_addr);
+    result = deadwire_run_bounded_health_loop(&bound_addr);
     long_context[1] = loop_context[1];
     if (result) {
         long_context[2] = DEADWIRE_LONG_STOP_ERROR;
@@ -294,12 +308,12 @@ static int deadwire_v2_live_smoke(void) {
     output_queue[2] = DEADWIRE_QUEUE_CAPACITY;
     output_queue[3] = (uint64_t)output_items;
 
-    response_context[0] = (uint64_t)smoke_status;
-    response_context[1] = sizeof(smoke_status) - 1;
-    response_context[2] = (uint64_t)smoke_type;
-    response_context[3] = sizeof(smoke_type) - 1;
-    response_context[4] = (uint64_t)smoke_body;
-    response_context[5] = sizeof(smoke_body) - 1;
+    response_context[0] = (uint64_t)health_status;
+    response_context[1] = sizeof(health_status) - 1;
+    response_context[2] = (uint64_t)health_type;
+    response_context[3] = sizeof(health_type) - 1;
+    response_context[4] = (uint64_t)health_body;
+    response_context[5] = sizeof(health_body) - 1;
 
     tick_context[0] = (uint64_t)live_context;
     tick_context[1] = (uint64_t)client_context;
