@@ -65,16 +65,15 @@ flowchart LR
         V2STOP --> V2SHUT["SHUTDOWN PROOF"]
     end
 
-    classDef v1 fill:white,stroke:blue,color:black
-    classDef v2 fill:white,stroke:green,color:black
-    classDef route fill:white,stroke:orange,color:black
-    classDef stop fill:white,stroke:red,color:black
-    class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP v1
-    class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2OUT v2
+    classDef lane fill:transparent,stroke:#8b949e,color:inherit
+    classDef route fill:transparent,stroke:#8b949e,color:inherit
+    classDef stop fill:transparent,stroke:#8b949e,color:inherit
+    class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP lane
+    class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2OUT lane
     class ROUTE route
     class V2CHECK,V2STOP,V2SHUT stop
-    style V1 fill:white,stroke:blue,color:black
-    style V2 fill:white,stroke:green,color:black
+    style V1 fill:transparent,stroke:#8b949e,color:inherit
+    style V2 fill:transparent,stroke:#8b949e,color:inherit
 ```
 
 ## BUILD
