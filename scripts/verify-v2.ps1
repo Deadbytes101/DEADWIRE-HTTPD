@@ -70,6 +70,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2accept.ps1
     Check-Status 'verify-v2accept'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2acceptprobe.ps1
+    Check-Status 'verify-v2acceptprobe'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2bridge.ps1
     Check-Status 'verify-v2bridge'
 
