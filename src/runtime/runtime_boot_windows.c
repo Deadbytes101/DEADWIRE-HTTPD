@@ -29,20 +29,77 @@ static uint64_t loop_context[3];
 static uint64_t long_context[5];
 static uint64_t response_context[6];
 static char request_buffer[512];
-static char response_buffer[1024];
+static char response_buffer[4096];
 
 static const char health_get_request[] = "GET /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
 static const char health_head_request[] = "HEAD /health HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
 static const char missing_get_request[] = "GET /missing HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+static const char root_get_request[] = "GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
 static const char health_status[] = "HTTP/1.0 200 OK\r\n";
 static const char missing_status[] = "HTTP/1.0 404 Not Found\r\n";
 static const char health_connection[] = "Connection: close\r\n";
 static const char text_type_line[] = "Content-Type: text/plain; charset=utf-8\r\n";
+static const char html_type_line[] = "Content-Type: text/html; charset=utf-8\r\n";
 static const char health_length[] = "Content-Length: 13\r\n";
 static const char missing_length[] = "Content-Length: 14\r\n";
+static const char root_length[] = "Content-Length: 1254\r\n";
 static const char text_type[] = "text/plain; charset=utf-8";
+static const char html_type[] = "text/html; charset=utf-8";
 static const char health_body[] = "deadwire: ok\n";
 static const char missing_body[] = "404 not found\n";
+static const char root_body[] =
+    "<!doctype html>\n"
+    "<html lang=\"en\">\n"
+    "<head>\n"
+    "  <meta charset=\"utf-8\">\n"
+    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+    "  <title>DEADWIRE HTTPD</title>\n"
+    "  <link rel=\"stylesheet\" href=\"/style.css\">\n"
+    "</head>\n"
+    "<body>\n"
+    "<pre class=\"screen\">\n"
+    "DEADWIRE HTTPD 0.3.0\n"
+    "ACCESS LOG / LOCAL HOST / HAND-WRITTEN X86-64\n"
+    "\n"
+    "THIS PAGE IS SERVED BY THE PROGRAM YOU JUST BUILT.\n"
+    "NO REACT. NO NODE. NO EXPRESS. NO RUNTIME SERVER.\n"
+    "\n"
+    "HOST: 127.0.0.1\n"
+    "PORT: 18080\n"
+    "MODE: BLOCKING HTTP/1.0\n"
+    "ROOT: public/\n"
+    "\n"
+    "WINDOWS PATH:\n"
+    "  WSAStartup -&gt; socket -&gt; bind -&gt; listen -&gt; accept -&gt; recv -&gt; CreateFileA -&gt; ReadFile -&gt; send\n"
+    "\n"
+    "LINUX PATH:\n"
+    "  socket -&gt; setsockopt -&gt; bind -&gt; listen -&gt; accept -&gt; read -&gt; openat -&gt; read -&gt; write\n"
+    "\n"
+    "ROUTES:\n"
+    "  GET /           public/index.html    text/html\n"
+    "  GET /health     live check           text/plain\n"
+    "  GET /hello.txt  static file          text/plain\n"
+    "  GET /style.css  static style         text/css\n"
+    "\n"
+    "GUARDS:\n"
+    "  POST /              405\n"
+    "  traversal probe     403\n"
+    "  raw percent path    403\n"
+    "  missing file        404\n"
+    "\n"
+    "STATUS:\n"
+    "  SERVER CORE: ALIVE\n"
+    "  ACCESS LOG:  ENABLED\n"
+    "  HEAP:        NONE\n"
+    "  FRAMEWORK:   NONE\n"
+    "\n"
+    "make verify\n"
+    "verify: ok\n"
+    "\n"
+    "A SMALL SERVER. A CLEAR BOUNDARY. EVERY BYTE ANSWERS.\n"
+    "</pre>\n"
+    "</body>\n"
+    "</html>\n";
 
 static int deadwire_contains(const char *buffer, int length, const char *needle, int needle_length) {
     int i;
@@ -82,11 +139,11 @@ static int deadwire_response_has_body(const char *buffer, int length) {
     return 1;
 }
 
-static void deadwire_set_response(const char *status, int status_length, const char *body, int body_length) {
+static void deadwire_set_response(const char *status, int status_length, const char *content_type, int content_type_length, const char *body, int body_length) {
     response_context[0] = (uint64_t)status;
     response_context[1] = (uint64_t)status_length;
-    response_context[2] = (uint64_t)text_type;
-    response_context[3] = sizeof(text_type) - 1;
+    response_context[2] = (uint64_t)content_type;
+    response_context[3] = (uint64_t)content_type_length;
     response_context[4] = (uint64_t)body;
     response_context[5] = (uint64_t)body_length;
 }
@@ -179,12 +236,16 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     SOCKET peer_socket = INVALID_SOCKET;
     const char *request;
     const char *expected_status;
+    const char *expected_type_line;
     const char *expected_length;
     const char *expected_body;
+    const char *response_type;
     int request_length;
     int expected_status_length;
+    int expected_type_line_length;
     int expected_length_length;
     int expected_body_length;
+    int response_type_length;
     int expect_body;
     int received;
     uint64_t expected_cursor;
@@ -195,10 +256,14 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     request_length = (int)(sizeof(health_get_request) - 1);
     expected_status = health_status;
     expected_status_length = (int)(sizeof(health_status) - 1);
+    expected_type_line = text_type_line;
+    expected_type_line_length = (int)(sizeof(text_type_line) - 1);
     expected_length = health_length;
     expected_length_length = (int)(sizeof(health_length) - 1);
     expected_body = health_body;
     expected_body_length = (int)(sizeof(health_body) - 1);
+    response_type = text_type;
+    response_type_length = (int)(sizeof(text_type) - 1);
     expect_body = 1;
 
     if (request_index == 1) {
@@ -214,9 +279,20 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_length_length = (int)(sizeof(missing_length) - 1);
         expected_body = missing_body;
         expected_body_length = (int)(sizeof(missing_body) - 1);
+    } else if (request_index == 3) {
+        request = root_get_request;
+        request_length = (int)(sizeof(root_get_request) - 1);
+        expected_type_line = html_type_line;
+        expected_type_line_length = (int)(sizeof(html_type_line) - 1);
+        expected_length = root_length;
+        expected_length_length = (int)(sizeof(root_length) - 1);
+        expected_body = root_body;
+        expected_body_length = (int)(sizeof(root_body) - 1);
+        response_type = html_type;
+        response_type_length = (int)(sizeof(html_type) - 1);
     }
 
-    deadwire_set_response(expected_status, expected_status_length, expected_body, expected_body_length);
+    deadwire_set_response(expected_status, expected_status_length, response_type, response_type_length, expected_body, expected_body_length);
 
     peer_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (peer_socket == INVALID_SOCKET) {
@@ -259,7 +335,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         return 75 + request_index;
     }
 
-    if (!deadwire_contains(response_buffer, received, text_type_line, (int)(sizeof(text_type_line) - 1))) {
+    if (!deadwire_contains(response_buffer, received, expected_type_line, expected_type_line_length)) {
         deadwire_close_client_socket();
         deadwire_close_peer_socket(&peer_socket);
         return 77 + request_index;
@@ -387,7 +463,7 @@ static int deadwire_v2_live_smoke(void) {
     output_queue[2] = DEADWIRE_QUEUE_CAPACITY;
     output_queue[3] = (uint64_t)output_items;
 
-    deadwire_set_response(health_status, (int)(sizeof(health_status) - 1), health_body, (int)(sizeof(health_body) - 1));
+    deadwire_set_response(health_status, (int)(sizeof(health_status) - 1), text_type, (int)(sizeof(text_type) - 1), health_body, (int)(sizeof(health_body) - 1));
 
     tick_context[0] = (uint64_t)live_context;
     tick_context[1] = (uint64_t)client_context;
