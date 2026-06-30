@@ -15,11 +15,11 @@ function InstructionCount([string]$Name){
     return ([regex]::Matches($B,'(?m)^\s*[0-9a-fA-F]+:\s+')).Count
 }
 $Budget=[ordered]@{
-    'dw_runtime_accept_enqueue'=3
-    'dw_runtime_output_drain'=3
-    'dw_runtime_worker_take'=48
-    'dw_runtime_worker_complete'=54
-    'dw_runtime_work_step'=16
+    'dw_runtime_accept_enqueue'=1
+    'dw_runtime_output_drain'=1
+    'dw_runtime_worker_take'=24
+    'dw_runtime_worker_complete'=20
+    'dw_runtime_work_step'=10
 }
 foreach($Name in $Budget.Keys){
     $Count=InstructionCount $Name
