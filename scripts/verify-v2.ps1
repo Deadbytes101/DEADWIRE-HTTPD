@@ -67,6 +67,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2step.ps1
     Check-Status 'verify-v2step'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2tickproof.ps1
+    Check-Status 'verify-v2tickproof'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2build.ps1
     Check-Status 'verify-v2build'
 

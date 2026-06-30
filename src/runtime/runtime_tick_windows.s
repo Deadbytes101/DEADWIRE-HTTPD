@@ -22,7 +22,7 @@
 dw_runtime_tick_once:
     push rbp
     mov rbp, rsp
-    sub rsp, 64
+    sub rsp, 96
 
     test rcx, rcx
     je .tick_bad_no_context
