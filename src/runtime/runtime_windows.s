@@ -61,6 +61,7 @@
 .global dw_runtime_handle_client
 .global dw_runtime_recv_request
 .global dw_runtime_request_is_get
+.global dw_runtime_request_is_head
 .global dw_runtime_queue_push
 .global dw_runtime_queue_pop
 .global dw_runtime_worker_init
@@ -74,6 +75,7 @@
 .global dw_runtime_output_entry
 .global dw_runtime_spawn_entry
 .global dw_runtime_send_response
+.global dw_runtime_send_head_response
 .global dw_runtime_send_all
 .global dw_runtime_write_output
 .global dw_runtime_u64_to_dec
@@ -121,8 +123,22 @@ dw_runtime_handle_client:
     mov rdx, qword ptr [rbp - 40]
     call dw_runtime_request_is_get
     test eax, eax
+    jne .dw_runtime_handle_client_send_get
+
+    mov rcx, qword ptr [rbp - 16]
+    mov rdx, qword ptr [rbp - 40]
+    call dw_runtime_request_is_head
+    test eax, eax
     je .dw_runtime_handle_client_bad_request
 
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [rbp - 32]
+    call dw_runtime_send_head_response
+    xor eax, eax
+    leave
+    ret
+
+.dw_runtime_handle_client_send_get:
     mov rcx, qword ptr [rbp - 8]
     mov rdx, qword ptr [rbp - 32]
     call dw_runtime_send_response
@@ -186,6 +202,27 @@ dw_runtime_request_is_get:
     ret
 
 .dw_runtime_request_is_get_no:
+    xor eax, eax
+    ret
+
+# dw_runtime_request_is_head(buffer rcx, length rdx) maps to HEAD method parser boundary.
+dw_runtime_request_is_head:
+    test rcx, rcx
+    je .dw_runtime_request_is_head_no
+    cmp rdx, 4
+    jb .dw_runtime_request_is_head_no
+    cmp byte ptr [rcx + 0], 'H'
+    jne .dw_runtime_request_is_head_no
+    cmp byte ptr [rcx + 1], 'E'
+    jne .dw_runtime_request_is_head_no
+    cmp byte ptr [rcx + 2], 'A'
+    jne .dw_runtime_request_is_head_no
+    cmp byte ptr [rcx + 3], 'D'
+    jne .dw_runtime_request_is_head_no
+    mov eax, 1
+    ret
+
+.dw_runtime_request_is_head_no:
     xor eax, eax
     ret
 
@@ -496,6 +533,53 @@ dw_runtime_spawn_entry:
 
 .dw_runtime_spawn_entry_bad:
     xor eax, eax
+    leave
+    ret
+
+# dw_runtime_send_head_response(socket rcx, response rdx) maps to the HEAD response builder boundary.
+dw_runtime_send_head_response:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+
+    mov qword ptr [rbp - 8], rcx
+    mov qword ptr [rbp - 16], rdx
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [r10 + DW_RESPONSE_STATUS_PTR]
+    mov r8, qword ptr [r10 + DW_RESPONSE_STATUS_LEN]
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_type_prefix]
+    mov r8, .dw_header_type_prefix_end - .dw_header_type_prefix
+    call dw_runtime_send_all
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [rbp - 8]
+    mov rdx, qword ptr [r10 + DW_RESPONSE_TYPE_PTR]
+    mov r8, qword ptr [r10 + DW_RESPONSE_TYPE_LEN]
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_len_prefix]
+    mov r8, .dw_header_len_prefix_end - .dw_header_len_prefix
+    call dw_runtime_send_all
+
+    mov r10, qword ptr [rbp - 16]
+    mov rcx, qword ptr [r10 + DW_RESPONSE_BODY_LEN]
+    call dw_runtime_u64_to_dec
+    mov rcx, qword ptr [rbp - 8]
+    mov r8, rdx
+    mov rdx, rax
+    call dw_runtime_send_all
+
+    mov rcx, qword ptr [rbp - 8]
+    lea rdx, [rip + .dw_header_end]
+    mov r8, .dw_header_end_end - .dw_header_end
+    call dw_runtime_send_all
+
     leave
     ret
 
