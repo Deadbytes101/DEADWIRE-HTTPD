@@ -15,6 +15,8 @@ if(!$S.Contains('dw_runtime_accept_entry')){throw 'v2 lane shape: missing accept
 if(!$S.Contains('dw_runtime_http_engine_entry')){throw 'v2 lane shape: missing http engine entry'}
 if($S.Contains('dw_runtime_output_entry')){throw 'v2 lane shape: unexpected output entry'}
 if(!$H.Contains('dw_runtime_http_engine_entry:')){throw 'v2 lane shape: missing http engine symbol'}
+if(!$H.Contains('dw_runtime_http_engine_step:')){throw 'v2 lane shape: missing http engine step'}
+if($H.Contains('jmp dw_runtime_work_entry')){throw 'v2 lane shape: http engine entry is only an alias'}
 $Waits=[regex]::Matches($J,'call\s+dw_runtime_wait_handle').Count
 if($Waits -ne 2){throw "v2 lane shape: wait count $Waits"}
 $Closes=[regex]::Matches($J,'call\s+dw_runtime_close_handle').Count
