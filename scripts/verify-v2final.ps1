@@ -5,12 +5,14 @@ $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
 $SizeProbe=Join-Path $R 'scripts/verify-v2size.ps1'
 $CallBudgetProbe=Join-Path $R 'scripts/verify-v2callbudget.ps1'
+$BranchBudgetProbe=Join-Path $R 'scripts/verify-v2branchbudget.ps1'
 $Program=Join-Path $R 'build/deadwire_v2_runtime.exe'
 if(!(Test-Path $Build)){throw "missing $Build"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
 if(!(Test-Path $SizeProbe)){throw "missing $SizeProbe"}
 if(!(Test-Path $CallBudgetProbe)){throw "missing $CallBudgetProbe"}
+if(!(Test-Path $BranchBudgetProbe)){throw "missing $BranchBudgetProbe"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build
 if($LASTEXITCODE){throw "v2 final build $LASTEXITCODE"}
 if(!(Test-Path $Program)){throw "missing $Program"}
@@ -22,6 +24,8 @@ if($LASTEXITCODE){throw "v2 budget $LASTEXITCODE"}
 if($LASTEXITCODE){throw "v2 size $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $CallBudgetProbe
 if($LASTEXITCODE){throw "v2 call budget $LASTEXITCODE"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $BranchBudgetProbe
+if($LASTEXITCODE){throw "v2 branch budget $LASTEXITCODE"}
 & $Program
 if($LASTEXITCODE){throw "v2 final run $LASTEXITCODE"}
 Write-Output 'verify-v2final: ok'
