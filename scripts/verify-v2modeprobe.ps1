@@ -58,3 +58,6 @@ int main(void){
 & gcc -o $EX $CO $RO $LO $AO $BO $TO $BDO $MOO $CLO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EX; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2modeprobe: ok'
+$HandleProbe=Join-Path $R 'scripts/verify-v2handleprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HandleProbe
+if($LASTEXITCODE){throw "handle probe $LASTEXITCODE"}
