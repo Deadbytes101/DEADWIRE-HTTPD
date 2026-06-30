@@ -14,6 +14,10 @@ extern int dw_runtime_mode_bound(uint64_t *mode_context);
 #define DEADWIRE_LONG_STOP_NONE 0
 #define DEADWIRE_LONG_STOP_TARGET 1
 #define DEADWIRE_LONG_STOP_ERROR 2
+#define DEADWIRE_ROUTE_HEALTH 1
+#define DEADWIRE_ROUTE_ROOT 2
+#define DEADWIRE_ROUTE_CSS 3
+#define DEADWIRE_ROUTE_MISSING 4
 
 static uint64_t input_items[DEADWIRE_QUEUE_CAPACITY];
 static uint64_t output_items[DEADWIRE_QUEUE_CAPACITY];
@@ -193,6 +197,51 @@ static int deadwire_response_has_body(const char *buffer, int length) {
     return 1;
 }
 
+static int deadwire_request_path_is(const char *request, int request_length, const char *path, int path_length) {
+    int i;
+    int path_start;
+
+    if (!request || !path || request_length <= 0 || path_length <= 0) {
+        return 0;
+    }
+
+    path_start = -1;
+    for (i = 0; i < request_length; ++i) {
+        if (request[i] == ' ') {
+            path_start = i + 1;
+            break;
+        }
+    }
+
+    if (path_start < 0 || path_start + path_length >= request_length) {
+        return 0;
+    }
+
+    for (i = 0; i < path_length; ++i) {
+        if (request[path_start + i] != path[i]) {
+            return 0;
+        }
+    }
+
+    return request[path_start + path_length] == ' ';
+}
+
+static int deadwire_select_route(const char *request, int request_length) {
+    if (deadwire_request_path_is(request, request_length, "/health", 7)) {
+        return DEADWIRE_ROUTE_HEALTH;
+    }
+
+    if (deadwire_request_path_is(request, request_length, "/", 1)) {
+        return DEADWIRE_ROUTE_ROOT;
+    }
+
+    if (deadwire_request_path_is(request, request_length, "/style.css", 10)) {
+        return DEADWIRE_ROUTE_CSS;
+    }
+
+    return DEADWIRE_ROUTE_MISSING;
+}
+
 static void deadwire_set_response(const char *status, int status_length, const char *content_type, int content_type_length, const char *body, int body_length) {
     response_context[0] = (uint64_t)status;
     response_context[1] = (uint64_t)status_length;
@@ -295,6 +344,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     const char *expected_body;
     const char *response_type;
     int request_length;
+    int selected_route;
     int expected_status_length;
     int expected_type_line_length;
     int expected_length_length;
@@ -308,6 +358,21 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
 
     request = health_get_request;
     request_length = (int)(sizeof(health_get_request) - 1);
+    if (request_index == 1) {
+        request = health_head_request;
+        request_length = (int)(sizeof(health_head_request) - 1);
+    } else if (request_index == 2 || request_index == 5) {
+        request = missing_get_request;
+        request_length = (int)(sizeof(missing_get_request) - 1);
+    } else if (request_index == 3 || request_index == 6) {
+        request = root_get_request;
+        request_length = (int)(sizeof(root_get_request) - 1);
+    } else if (request_index == 4 || request_index == 7) {
+        request = css_get_request;
+        request_length = (int)(sizeof(css_get_request) - 1);
+    }
+
+    selected_route = deadwire_select_route(request, request_length);
     expected_status = health_status;
     expected_status_length = (int)(sizeof(health_status) - 1);
     expected_type_line = text_type_line;
@@ -318,24 +383,16 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     expected_body_length = (int)(sizeof(health_body) - 1);
     response_type = text_type;
     response_type_length = (int)(sizeof(text_type) - 1);
-    expect_body = 1;
+    expect_body = request_index != 1;
 
-    if (request_index == 1) {
-        request = health_head_request;
-        request_length = (int)(sizeof(health_head_request) - 1);
-        expect_body = 0;
-    } else if (request_index == 2 || request_index == 5) {
-        request = missing_get_request;
-        request_length = (int)(sizeof(missing_get_request) - 1);
+    if (selected_route == DEADWIRE_ROUTE_MISSING) {
         expected_status = missing_status;
         expected_status_length = (int)(sizeof(missing_status) - 1);
         expected_length = missing_length;
         expected_length_length = (int)(sizeof(missing_length) - 1);
         expected_body = missing_body;
         expected_body_length = (int)(sizeof(missing_body) - 1);
-    } else if (request_index == 3 || request_index == 6) {
-        request = root_get_request;
-        request_length = (int)(sizeof(root_get_request) - 1);
+    } else if (selected_route == DEADWIRE_ROUTE_ROOT) {
         expected_type_line = html_type_line;
         expected_type_line_length = (int)(sizeof(html_type_line) - 1);
         expected_length = root_length;
@@ -344,9 +401,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_body_length = (int)(sizeof(root_body) - 1);
         response_type = html_type;
         response_type_length = (int)(sizeof(html_type) - 1);
-    } else if (request_index == 4 || request_index == 7) {
-        request = css_get_request;
-        request_length = (int)(sizeof(css_get_request) - 1);
+    } else if (selected_route == DEADWIRE_ROUTE_CSS) {
         expected_type_line = css_type_line;
         expected_type_line_length = (int)(sizeof(css_type_line) - 1);
         expected_length = css_length;
@@ -355,6 +410,8 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_body_length = (int)(sizeof(css_body) - 1);
         response_type = css_type;
         response_type_length = (int)(sizeof(css_type) - 1);
+    } else if (selected_route != DEADWIRE_ROUTE_HEALTH) {
+        return 10 + request_index;
     }
 
     deadwire_set_response(expected_status, expected_status_length, response_type, response_type_length, expected_body, expected_body_length);
