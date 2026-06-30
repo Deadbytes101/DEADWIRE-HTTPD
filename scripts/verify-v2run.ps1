@@ -161,3 +161,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Output 'verify-v2run: ok'
+$NextProbe = Join-Path $RepoRoot 'scripts/verify-v2final.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $NextProbe
+if ($LASTEXITCODE -ne 0) { throw "V2 final verifier failed with exit code $LASTEXITCODE" }
