@@ -49,7 +49,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "V2 runtime boot assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' -Wl,--subsystem,console -o $ExePath $BootObjectPath $RuntimeObjectPath $LaneSetObjectPath -lws2_32 -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' '-Wl,--subsystem,console' -o $ExePath $BootObjectPath $RuntimeObjectPath $LaneSetObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "V2 runtime link failed with exit code $LASTEXITCODE"
 }
