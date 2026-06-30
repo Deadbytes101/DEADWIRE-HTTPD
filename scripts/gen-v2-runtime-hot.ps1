@@ -232,11 +232,12 @@ dw_runtime_work_step:
     ret
 '@
 
-$Hot = $Source.Replace($AcceptOld, $AcceptNew).
-    Replace($DrainOld, $DrainNew).
-    Replace($TakeOld, $TakeNew).
-    Replace($CompleteOld, $CompleteNew).
-    Replace($WorkStepOld, $WorkStepNew)
+$Hot = $Source
+$Hot = $Hot.Replace($AcceptOld, $AcceptNew)
+$Hot = $Hot.Replace($DrainOld, $DrainNew)
+$Hot = $Hot.Replace($TakeOld, $TakeNew)
+$Hot = $Hot.Replace($CompleteOld, $CompleteNew)
+$Hot = $Hot.Replace($WorkStepOld, $WorkStepNew)
 
 if ($Hot -eq $Source) {
     throw 'V2 thin runtime generation made no changes'
