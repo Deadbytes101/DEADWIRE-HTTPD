@@ -6,15 +6,17 @@ $RuntimePath = Join-Path $RepoRoot 'src/runtime/runtime_windows.s'
 $LaneSetPath = Join-Path $RepoRoot 'src/runtime/runtime_spawn_set_windows.s'
 $ExtraPath = Join-Path $RepoRoot 'src/runtime/runtime_handle_windows.s'
 $JoinPath = Join-Path $RepoRoot 'src/runtime/runtime_join_windows.s'
+$RunPath = Join-Path $RepoRoot 'src/runtime/runtime_run_windows.s'
 $BootPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.s'
 $RuntimeObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime.o'
 $LaneSetObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_lanes.o'
 $ExtraObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_extra.o'
 $JoinObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_join.o'
+$RunObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_run.o'
 $BootObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.o'
 $ExePath = Join-Path $BuildDir 'deadwire_v2_runtime.exe'
 
-foreach ($Path in @($RuntimePath, $LaneSetPath, $ExtraPath, $JoinPath)) {
+foreach ($Path in @($RuntimePath, $LaneSetPath, $ExtraPath, $JoinPath, $RunPath)) {
     if (-not (Test-Path $Path)) {
         throw "missing V2 runtime source: $Path"
     }
@@ -58,12 +60,17 @@ if ($LASTEXITCODE -ne 0) {
     throw "V2 join assembly failed with exit code $LASTEXITCODE"
 }
 
+& as --64 -o $RunObjectPath $RunPath
+if ($LASTEXITCODE -ne 0) {
+    throw "V2 run assembly failed with exit code $LASTEXITCODE"
+}
+
 & as --64 -o $BootObjectPath $BootPath
 if ($LASTEXITCODE -ne 0) {
     throw "V2 runtime boot assembly failed with exit code $LASTEXITCODE"
 }
 
-& gcc -nostdlib '-Wl,-e,mainCRTStartup' '-Wl,--subsystem,console' -o $ExePath $BootObjectPath $RuntimeObjectPath $LaneSetObjectPath $ExtraObjectPath $JoinObjectPath -lws2_32 -lkernel32
+& gcc -nostdlib '-Wl,-e,mainCRTStartup' '-Wl,--subsystem,console' -o $ExePath $BootObjectPath $RuntimeObjectPath $LaneSetObjectPath $ExtraObjectPath $JoinObjectPath $RunObjectPath -lws2_32 -lkernel32
 if ($LASTEXITCODE -ne 0) {
     throw "V2 runtime link failed with exit code $LASTEXITCODE"
 }
