@@ -41,9 +41,11 @@ This is not a public server benchmark. It is a local runtime handoff measurement
 
 `make verify-triple-thread` reaches `verify-v2final`, builds `deadwire_v2_runtime.exe`, checks the hot helpers, then runs the executable.
 
-That executable opens loopback through a V2 long-mode controller, runs a bounded health loop, sends four `/health` method requests one by one, runs bounded V2 mode for each request, checks each HTTP 200 response shape against V1 health behavior, proves the queue cursor wraps back to zero, closes sockets, and exits nonzero on failure.
+That executable opens loopback through a V2 long-mode controller, runs a bounded probe loop, sends `/health` and `/missing` probe requests one by one, runs bounded V2 mode for each request, checks each response shape, proves the queue cursor wraps back to zero, closes sockets, and exits nonzero on failure.
 
 The health parity probe checks the narrow V1 `/health` response shape only. It is not a full V1/V2 parity claim.
+
+The missing response probe checks the V1 404 response shape. It is not full route selection parity yet.
 
 The method parity probe checks both the normal payload path and the empty-payload path.
 
