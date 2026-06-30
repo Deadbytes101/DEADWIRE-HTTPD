@@ -26,7 +26,8 @@ $RequiredNeedles = @(
     'dw_runtime_accept_entry',
     'dw_runtime_work_entry',
     'dw_runtime_output_entry',
-    'call dw_runtime_spawn_entry'
+    'call dw_runtime_spawn_entry',
+    'dw_runtime_close_handle'
 )
 
 foreach ($Needle in $RequiredNeedles) {
@@ -63,6 +64,7 @@ if (-not $SymbolText.Contains('dw_runtime_spawn_lanes')) {
 .intel_syntax noprefix
 .global mainCRTStartup
 .global CreateThread
+.global dw_runtime_close_handle
 .extern dw_runtime_spawn_lanes
 .extern dw_runtime_accept_entry
 .extern dw_runtime_work_entry
@@ -126,6 +128,12 @@ capture_param:
     .quad 0
     .quad 0
     .quad 0
+close_count:
+    .quad 0
+close_seen:
+    .quad 0
+    .quad 0
+    .quad 0
 
 .section .text
 mainCRTStartup:
@@ -142,8 +150,22 @@ mainCRTStartup:
     jne fail
     cmp qword ptr [rip + bad_ctx + 72], 1
     jne fail
+    cmp qword ptr [rip + close_count], 1
+    jne fail
+    cmp qword ptr [rip + close_seen + 0], 0x12345001
+    jne fail
+    cmp qword ptr [rip + bad_ctx + 48], 0
+    jne fail
+    cmp qword ptr [rip + bad_ctx + 56], 0
+    jne fail
+    cmp qword ptr [rip + bad_ctx + 64], 0
+    jne fail
 
     mov qword ptr [rip + capture_count], 0
+    mov qword ptr [rip + close_count], 0
+    mov qword ptr [rip + close_seen + 0], 0
+    mov qword ptr [rip + close_seen + 8], 0
+    mov qword ptr [rip + close_seen + 16], 0
     lea rcx, [rip + spawn_ctx]
     call dw_runtime_spawn_lanes
     test eax, eax
@@ -151,6 +173,8 @@ mainCRTStartup:
     cmp qword ptr [rip + spawn_ctx + 72], 0
     jne fail
     cmp qword ptr [rip + capture_count], 3
+    jne fail
+    cmp qword ptr [rip + close_count], 0
     jne fail
 
     cmp qword ptr [rip + spawn_ctx + 48], 0x12345001
@@ -211,6 +235,14 @@ no_tid:
     inc qword ptr [rip + capture_count]
     mov rax, qword ptr [rip + capture_count]
     add rax, 0x12345000
+    ret
+
+dw_runtime_close_handle:
+    mov r10, qword ptr [rip + close_count]
+    lea r11, [rip + close_seen]
+    mov qword ptr [r11 + r10 * 8], rcx
+    inc qword ptr [rip + close_count]
+    mov eax, 1
     ret
 '@ | Set-Content -Encoding ASCII $HarnessPath
 
