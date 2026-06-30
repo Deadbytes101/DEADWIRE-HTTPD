@@ -52,3 +52,6 @@ int main(void){
 & gcc -o $EX $CO $RO $LO $AO $BO $TO $CLO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EX; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2cycleprobe: ok'
+$BoundProbe=Join-Path $R 'scripts/verify-v2boundprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $BoundProbe
+if($LASTEXITCODE){throw "bound probe $LASTEXITCODE"}
