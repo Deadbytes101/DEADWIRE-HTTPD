@@ -6,16 +6,25 @@ This file tracks DEADWIRE HTTPD milestones. The older changelog stopped at the v
 
 V2 native runtime foundation.
 
+### Added
+
+- Fixed V2 lane-shape verifier for the opt-in runtime path.
+- V2 mode probe, handle probe, run-lanes probe, and final build/run gate are now chained through `make verify-triple-thread`.
+- Opt-in V2 runtime build path now reaches `build/deadwire_v2_runtime.exe` from the triple-thread verification chain.
+- V2 boot context now aligns with the current fixed-lane shape.
+
 ### Planned
 
 - Split the server runtime boundary from platform backend details.
 - Define assembly-call ABI boundaries for startup, sockets, request parsing, file I/O, response writing, and shutdown.
 - Add a verification gate for the runtime/backend split before changing HTTP behavior.
 - Preserve V1.3.0 default behavior while V2 scaffolding is introduced.
+- Keep moving the opt-in V2 runtime toward supervisor + acceptor + HTTP engine topology.
 
 ### Guardrails
 
-- No new concurrency claim without a worker-pool implementation and benchmark evidence.
+- No concurrency, scalability, or speed claim without benchmark evidence.
+- The V2 lane target is fixed topology, not thread-per-connection and not a generic worker-pool claim.
 - No TLS, CGI, third-party HTTP parser, async framework, or public internet hardening claim in this track.
 - Keep the default binary safe and close-after-response unless an opt-in build flavor is explicitly selected.
 
