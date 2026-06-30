@@ -5,7 +5,7 @@
 # It is not linked into the default server build.
 
 .extern dw_runtime_live_bridge_once
-.extern dw_runtime_work_step
+.extern dw_runtime_http_request_step
 .extern dw_runtime_output_drain
 
 .equ DW_TICK_LIVE_CONTEXT_PTR, 0
@@ -65,7 +65,7 @@ dw_runtime_tick_once:
     jne .tick_bad
 
     mov rcx, qword ptr [rbp - 40]
-    call dw_runtime_work_step
+    call dw_runtime_http_request_step
     test eax, eax
     jne .tick_bad
 
