@@ -33,7 +33,6 @@ MACOS   -> POSIX SOCKET PATH
 ## ARCHITECTURAL PIPELINE
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"background": "transparent", "primaryColor": "#0d1117", "primaryTextColor": "#f0f6fc", "primaryBorderColor": "#8b949e", "lineColor": "#8b949e", "fontFamily": "monospace"}}}%%
 flowchart TD
     V1TITLE["DEFAULT V1 SERVER PIPELINE"]
     V1TITLE --> CLIENT["TCP CLIENT"]
@@ -66,13 +65,6 @@ flowchart TD
     V2OUT --> V2CHECK["RESPONSE SHAPE CHECK"]
     V2CHECK --> V2STOP["TARGET-REACHED STOP"]
     V2STOP --> V2SHUT["SHUTDOWN PROOF"]
-
-    classDef node fill:#0d1117,stroke:#8b949e,color:#f0f6fc
-    classDef title fill:#0d1117,stroke:#8b949e,color:#f0f6fc
-    class CLIENT,SOCKET,RECV,PARSE,GUARD,HEALTH,STATIC,MISS,RESPONSE,SEND,CLOSE,LOOP node
-    class V2BOOT,V2LONG,V2LIVE,V2COUNT,V2TICK,V2ACCEPT,V2QUEUE,V2HTTP,V2ROUTE,V2OUT,V2CHECK,V2STOP,V2SHUT node
-    class ROUTE node
-    class V1TITLE,V2TITLE title
 ```
 
 ## BUILD
