@@ -11,6 +11,7 @@ The generated V2 runtime is checked at multiple levels:
 - byte-size budget: `scripts/verify-v2size.ps1`
 - call-count budget: `scripts/verify-v2callbudget.ps1`
 - branch-count budget: `scripts/verify-v2branchbudget.ps1`
+- live smoke executable: `build/deadwire_v2_runtime.exe`
 
 These gates are chained from `scripts/verify-v2final.ps1`, which is reached by `make verify-triple-thread`.
 
@@ -34,7 +35,13 @@ make bench-v2-runtime
 
 The benchmark exercises the generated hot runtime handoff path: input queue push, HTTP engine step, and output queue drain. It prints requests, seconds, ns/op, and ops/s for each round, then prints a median ns/op summary. Timing is informational; structural budgets remain enforced by the verify gates.
 
-See `docs/v2-runtime-microbench.md` for the first recorded local baseline.
+This is not a public server benchmark. It is a local runtime handoff measurement.
+
+## Live smoke
+
+`make verify-triple-thread` reaches `verify-v2final`, builds `deadwire_v2_runtime.exe`, checks the hot helpers, then runs the executable.
+
+That executable opens loopback, sends one GET request, runs bounded V2 mode, checks the HTTP 200 response and body, closes sockets, and exits nonzero on failure.
 
 ## Rule
 
