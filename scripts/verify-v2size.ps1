@@ -19,11 +19,11 @@ function ByteCount([string]$Name){
     return $Total
 }
 $Budget=[ordered]@{
-    'dw_runtime_accept_enqueue'=8
-    'dw_runtime_output_drain'=8
-    'dw_runtime_worker_take'=128
-    'dw_runtime_worker_complete'=128
-    'dw_runtime_work_step'=48
+    'dw_runtime_accept_enqueue'=5
+    'dw_runtime_output_drain'=5
+    'dw_runtime_worker_take'=72
+    'dw_runtime_worker_complete'=56
+    'dw_runtime_work_step'=28
 }
 foreach($Name in $Budget.Keys){
     $Count=ByteCount $Name
