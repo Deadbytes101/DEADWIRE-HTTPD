@@ -58,6 +58,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2live.ps1
     Check-Status 'verify-v2live'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2liveclose.ps1
+    Check-Status 'verify-v2liveclose'
+
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2accept.ps1
     Check-Status 'verify-v2accept'
 
