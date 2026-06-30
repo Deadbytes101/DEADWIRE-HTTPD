@@ -21,7 +21,7 @@ CURRENT V2 PROOF:
 - no thread-per-connection design
 - V2 request step takes one queued client, runs the HTTP handler, and completes it
 - V2 tick path accepts a loopback client and routes through the request step
-- deadwire_v2_runtime.exe runs a live smoke path and exits nonzero on failure
+- deadwire_v2_runtime.exe runs a bounded multi-request live smoke path and exits nonzero on failure
 - make verify-triple-thread reaches verify-v2final and executes the V2 runtime exe
 ```
 
@@ -139,13 +139,14 @@ Status:
 ACTIVE AND CHAINED INTO VERIFY.
 ```
 
-### V2.3: Executable Live Smoke
+### V2.3: Executable Multi-Request Live Smoke
 
 ```txt
 - build/deadwire_v2_runtime.exe opens a loopback listener
-- local peer sends one GET request
-- bounded V2 mode processes the request
-- response status and body are checked
+- local peer sends four GET requests, one request per bounded V2 tick
+- bounded V2 mode processes each request through the HTTP request step
+- response status and body are checked on every request
+- queue head/tail cursors wrap back to zero after four requests
 - sockets close cleanly
 - process exits nonzero on failure
 ```
@@ -176,9 +177,9 @@ ACTIVE. VERIFY-V2FINAL RUNS THE EXE.
 Pass condition:
 
 ```txt
-local smoke passes
-bounded multi-request test passes
+bounded multi-request smoke passes
 no leaked socket handle in local probe
+shutdown path has a real proof
 ```
 
 ### V2.5: Default Server Parity Gate
@@ -224,7 +225,7 @@ NO RUNTIME MAGIC THAT CANNOT BE EXPLAINED AT THE ABI LEVEL.
 
 ```txt
 NEXT PATCH:
-- document the current V2 executable proof
+- move from multi-request smoke to explicit shutdown proof
 - keep default server wording honest
 - do not claim public server performance from the local V2 microbench
 ```

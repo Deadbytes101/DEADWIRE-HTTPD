@@ -41,7 +41,7 @@ This is not a public server benchmark. It is a local runtime handoff measurement
 
 `make verify-triple-thread` reaches `verify-v2final`, builds `deadwire_v2_runtime.exe`, checks the hot helpers, then runs the executable.
 
-That executable opens loopback, sends one GET request, runs bounded V2 mode, checks the HTTP 200 response and body, closes sockets, and exits nonzero on failure.
+That executable opens loopback, sends four GET requests one by one, runs bounded V2 mode for each request, checks each HTTP 200 response and body, proves the queue cursor wraps back to zero, closes sockets, and exits nonzero on failure.
 
 ## Rule
 
