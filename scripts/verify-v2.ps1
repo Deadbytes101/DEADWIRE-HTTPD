@@ -31,6 +31,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2lane.ps1
     Check-Status 'verify-v2lane'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2entry.ps1
+    Check-Status 'verify-v2entry'
+
     make verify
     Check-Status 'make verify'
 
