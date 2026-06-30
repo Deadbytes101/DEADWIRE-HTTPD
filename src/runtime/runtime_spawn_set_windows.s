@@ -6,7 +6,6 @@
 
 .extern dw_runtime_accept_entry
 .extern dw_runtime_work_entry
-.extern dw_runtime_output_entry
 .extern dw_runtime_spawn_entry
 .extern dw_runtime_close_handle
 
@@ -61,17 +60,6 @@ dw_runtime_spawn_lanes:
     mov r10, qword ptr [rbp - 8]
     mov qword ptr [r10 + DW_SPAWN_WORK_HANDLE], rax
 
-    mov rdx, qword ptr [r10 + DW_SPAWN_OUTPUT_CONTEXT_PTR]
-    test rdx, rdx
-    je .bad
-    lea rcx, [rip + dw_runtime_output_entry]
-    mov r8, qword ptr [r10 + DW_SPAWN_OUTPUT_THREAD_ID_PTR]
-    call dw_runtime_spawn_entry
-    test rax, rax
-    je .bad
-    mov r10, qword ptr [rbp - 8]
-    mov qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE], rax
-
     xor eax, eax
     mov qword ptr [r10 + DW_SPAWN_LAST_RESULT], rax
     leave
@@ -80,15 +68,6 @@ dw_runtime_spawn_lanes:
 .bad:
     mov r10, qword ptr [rbp - 8]
 
-    mov rcx, qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE]
-    test rcx, rcx
-    je .bad_check_work
-    call dw_runtime_close_handle
-    mov r10, qword ptr [rbp - 8]
-    xor eax, eax
-    mov qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE], rax
-
-.bad_check_work:
     mov rcx, qword ptr [r10 + DW_SPAWN_WORK_HANDLE]
     test rcx, rcx
     je .bad_check_accept

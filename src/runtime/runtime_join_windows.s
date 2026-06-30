@@ -15,7 +15,7 @@
 .section .text
 .global dw_runtime_join_lanes
 
-# dw_runtime_join_lanes(spawn_context rcx) joins the three lane handles.
+# dw_runtime_join_lanes(spawn_context rcx) joins the accept and HTTP lane handles.
 dw_runtime_join_lanes:
     push rbp
     mov rbp, rsp
@@ -42,14 +42,6 @@ dw_runtime_join_lanes:
     jne .join_bad
 
     mov r10, qword ptr [rbp - 8]
-    mov rcx, qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE]
-    test rcx, rcx
-    je .join_bad
-    call dw_runtime_wait_handle
-    test eax, eax
-    jne .join_bad
-
-    mov r10, qword ptr [rbp - 8]
     mov rcx, qword ptr [r10 + DW_SPAWN_ACCEPT_HANDLE]
     call dw_runtime_close_handle
     test eax, eax
@@ -61,14 +53,9 @@ dw_runtime_join_lanes:
     test eax, eax
     je .join_bad
 
-    mov r10, qword ptr [rbp - 8]
-    mov rcx, qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE]
-    call dw_runtime_close_handle
-    test eax, eax
-    je .join_bad
-
     xor eax, eax
     mov r10, qword ptr [rbp - 8]
+    mov qword ptr [r10 + DW_SPAWN_OUTPUT_HANDLE], rax
     mov qword ptr [r10 + DW_SPAWN_LAST_RESULT], rax
     leave
     ret
