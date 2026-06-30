@@ -2,7 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $BuildDir = Join-Path $RepoRoot 'build'
-$RuntimePath = Join-Path $RepoRoot 'src/runtime/runtime_windows.s'
+$RuntimeBasePath = Join-Path $RepoRoot 'src/runtime/runtime_windows.s'
+$RuntimeGenScriptPath = Join-Path $RepoRoot 'scripts/gen-v2-runtime-hot.ps1'
+$RuntimePath = Join-Path $BuildDir 'deadwire_v2_runtime_hot.s'
 $LaneSetPath = Join-Path $RepoRoot 'src/runtime/runtime_spawn_set_windows.s'
 $HttpEntryPath = Join-Path $RepoRoot 'src/runtime/runtime_http_engine_entry_windows.s'
 $ExtraPath = Join-Path $RepoRoot 'src/runtime/runtime_handle_windows.s'
@@ -34,7 +36,7 @@ $ModeObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_mode.o'
 $BootObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.o'
 $ExePath = Join-Path $BuildDir 'deadwire_v2_runtime.exe'
 
-foreach ($Path in @($RuntimePath, $LaneSetPath, $HttpEntryPath, $ExtraPath, $JoinPath, $RunPath, $BootPath, $LivePath, $LiveClosePath, $LiveCyclePath, $AcceptPath, $BridgePath, $TickPath, $BoundPath, $ModePath)) {
+foreach ($Path in @($RuntimeBasePath, $RuntimeGenScriptPath, $LaneSetPath, $HttpEntryPath, $ExtraPath, $JoinPath, $RunPath, $BootPath, $LivePath, $LiveClosePath, $LiveCyclePath, $AcceptPath, $BridgePath, $TickPath, $BoundPath, $ModePath)) {
     if (-not (Test-Path $Path)) {
         throw "missing V2 runtime source: $Path"
     }
@@ -43,6 +45,10 @@ foreach ($Path in @($RuntimePath, $LaneSetPath, $HttpEntryPath, $ExtraPath, $Joi
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
+
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RuntimeGenScriptPath
+if ($LASTEXITCODE -ne 0) { throw "V2 thin runtime generation failed with exit code $LASTEXITCODE" }
+if (-not (Test-Path $RuntimePath)) { throw "missing generated V2 runtime source: $RuntimePath" }
 
 & as --64 -o $RuntimeObjectPath $RuntimePath
 if ($LASTEXITCODE -ne 0) { throw "V2 runtime assembly failed with exit code $LASTEXITCODE" }
