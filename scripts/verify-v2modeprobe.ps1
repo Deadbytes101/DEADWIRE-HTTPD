@@ -3,6 +3,9 @@ $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $ShapeProbe=Join-Path $R 'scripts/verify-v2lane-shape.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ShapeProbe
 if($LASTEXITCODE){throw "lane shape $LASTEXITCODE"}
+$HttpProbe=Join-Path $R 'scripts/verify-v2httpengineprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HttpProbe
+if($LASTEXITCODE){throw "http engine probe $LASTEXITCODE"}
 $B=Join-Path $R 'build'
 if(!(Test-Path $B)){New-Item -ItemType Directory -Path $B|Out-Null}
 $RT=Join-Path $R 'src/runtime/runtime_windows.s'
