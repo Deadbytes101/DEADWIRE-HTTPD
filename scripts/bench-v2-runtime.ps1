@@ -68,7 +68,19 @@ int main(void) {
 }
 '@ | Set-Content -Encoding ASCII $HarnessSource
 
-& gcc -O2 -DREQUESTS=$Requests -DCAPACITY=$Capacity -o $HarnessExe $HarnessSource $HotObject $EngineObject -lws2_32 -lkernel32
+$GccArgs = @(
+    '-O2',
+    "-DREQUESTS=$Requests",
+    "-DCAPACITY=$Capacity",
+    '-o',
+    $HarnessExe,
+    $HarnessSource,
+    $HotObject,
+    $EngineObject,
+    '-lws2_32',
+    '-lkernel32'
+)
+& gcc @GccArgs
 if ($LASTEXITCODE) { throw "bench harness link failed $LASTEXITCODE" }
 & $HarnessExe
 if ($LASTEXITCODE) { throw "bench-v2-runtime failed $LASTEXITCODE" }
