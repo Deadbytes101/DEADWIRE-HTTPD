@@ -11,6 +11,9 @@ extern int dw_runtime_mode_bound(uint64_t *mode_context);
 #define DEADWIRE_SMOKE_REQUESTS 4
 #define DEADWIRE_QUEUE_CAPACITY 4
 #define DEADWIRE_SENTINEL_SOCKET ((SOCKET)99)
+#define DEADWIRE_LONG_STOP_NONE 0
+#define DEADWIRE_LONG_STOP_TARGET 1
+#define DEADWIRE_LONG_STOP_ERROR 2
 
 static uint64_t input_items[DEADWIRE_QUEUE_CAPACITY];
 static uint64_t output_items[DEADWIRE_QUEUE_CAPACITY];
@@ -23,6 +26,7 @@ static uint64_t tick_context[7];
 static uint64_t bound_context[4];
 static uint64_t mode_context[2];
 static uint64_t loop_context[3];
+static uint64_t long_context[5];
 static uint64_t response_context[6];
 static char request_buffer[512];
 static char response_buffer[1024];
@@ -96,11 +100,15 @@ static int deadwire_shutdown_live(void) {
     return 1;
 }
 
-static int deadwire_finish_with_shutdown(int result_code, int shutdown_failure_code) {
+static int deadwire_finish_long_mode(int result_code, int shutdown_failure_code) {
     if (!deadwire_shutdown_live()) {
+        long_context[3] = (uint64_t)shutdown_failure_code;
+        long_context[4] = (uint64_t)shutdown_failure_code;
         return shutdown_failure_code;
     }
 
+    long_context[3] = (uint64_t)result_code;
+    long_context[4] = 0;
     return result_code;
 }
 
@@ -124,6 +132,14 @@ static void deadwire_prepare_loop(void) {
     loop_context[0] = DEADWIRE_SMOKE_REQUESTS;
     loop_context[1] = 0;
     loop_context[2] = 99;
+}
+
+static void deadwire_prepare_long_mode(void) {
+    long_context[0] = DEADWIRE_SMOKE_REQUESTS;
+    long_context[1] = 0;
+    long_context[2] = DEADWIRE_LONG_STOP_NONE;
+    long_context[3] = 99;
+    long_context[4] = 99;
 }
 
 static int deadwire_run_smoke_request(struct sockaddr_in *bound_addr, int request_index) {
@@ -216,10 +232,52 @@ static int deadwire_run_bounded_smoke_loop(struct sockaddr_in *bound_addr) {
     return 0;
 }
 
-static int deadwire_v2_live_smoke(void) {
-    struct sockaddr_in server_addr;
+static int deadwire_run_long_mode(struct sockaddr_in *server_addr) {
     struct sockaddr_in bound_addr;
     int bound_len = (int)sizeof(bound_addr);
+    int result;
+
+    deadwire_prepare_long_mode();
+
+    live_context[0] = 0;
+    live_context[1] = (uint64_t)server_addr;
+    live_context[2] = sizeof(*server_addr);
+    live_context[3] = 1;
+    live_context[4] = 99;
+
+    if (dw_runtime_live_open(live_context)) {
+        long_context[2] = DEADWIRE_LONG_STOP_ERROR;
+        long_context[3] = 2;
+        return 2;
+    }
+
+    if (getsockname((SOCKET)live_context[0], (struct sockaddr *)&bound_addr, &bound_len)) {
+        long_context[2] = DEADWIRE_LONG_STOP_ERROR;
+        long_context[3] = 3;
+        return deadwire_finish_long_mode(3, 130);
+    }
+
+    result = deadwire_run_bounded_smoke_loop(&bound_addr);
+    long_context[1] = loop_context[1];
+    if (result) {
+        long_context[2] = DEADWIRE_LONG_STOP_ERROR;
+        long_context[3] = (uint64_t)result;
+        return deadwire_finish_long_mode(result, 131);
+    }
+
+    if (loop_context[0] != DEADWIRE_SMOKE_REQUESTS || loop_context[1] != DEADWIRE_SMOKE_REQUESTS || loop_context[2] != 0) {
+        long_context[2] = DEADWIRE_LONG_STOP_ERROR;
+        long_context[3] = 120;
+        return deadwire_finish_long_mode(120, 132);
+    }
+
+    long_context[1] = loop_context[1];
+    long_context[2] = DEADWIRE_LONG_STOP_TARGET;
+    return deadwire_finish_long_mode(0, 133);
+}
+
+static int deadwire_v2_live_smoke(void) {
+    struct sockaddr_in server_addr;
     int result;
 
     server_addr.sin_family = AF_INET;
@@ -243,12 +301,6 @@ static int deadwire_v2_live_smoke(void) {
     response_context[4] = (uint64_t)smoke_body;
     response_context[5] = sizeof(smoke_body) - 1;
 
-    live_context[0] = 0;
-    live_context[1] = (uint64_t)&server_addr;
-    live_context[2] = sizeof(server_addr);
-    live_context[3] = 1;
-    live_context[4] = 99;
-
     tick_context[0] = (uint64_t)live_context;
     tick_context[1] = (uint64_t)client_context;
     tick_context[2] = (uint64_t)input_queue;
@@ -267,37 +319,34 @@ static int deadwire_v2_live_smoke(void) {
 
     deadwire_prepare_tick();
     deadwire_prepare_loop();
+    deadwire_prepare_long_mode();
 
     if (dw_runtime_worker_init(worker_context, 7, input_queue, output_queue)) {
         return 1;
     }
 
-    if (dw_runtime_live_open(live_context)) {
-        return 2;
-    }
-
-    if (getsockname((SOCKET)live_context[0], (struct sockaddr *)&bound_addr, &bound_len)) {
-        return deadwire_finish_with_shutdown(3, 130);
-    }
-
-    result = deadwire_run_bounded_smoke_loop(&bound_addr);
+    result = deadwire_run_long_mode(&server_addr);
     if (result) {
-        return deadwire_finish_with_shutdown(result, 131);
+        return result;
     }
 
-    if (loop_context[0] != DEADWIRE_SMOKE_REQUESTS || loop_context[1] != DEADWIRE_SMOKE_REQUESTS || loop_context[2] != 0) {
-        return deadwire_finish_with_shutdown(120, 132);
+    if (long_context[0] != DEADWIRE_SMOKE_REQUESTS || long_context[1] != DEADWIRE_SMOKE_REQUESTS || long_context[2] != DEADWIRE_LONG_STOP_TARGET || long_context[3] != 0 || long_context[4] != 0) {
+        return 140;
     }
 
     if (input_queue[0] != 0 || input_queue[1] != 0 || output_queue[0] != 0 || output_queue[1] != 0 || worker_context[4] != DEADWIRE_SMOKE_REQUESTS) {
-        return deadwire_finish_with_shutdown(121, 133);
+        return 141;
     }
 
     if ((SOCKET)client_context[0] != DEADWIRE_SENTINEL_SOCKET || tick_context[5] != (uint64_t)client_context || tick_context[6] != 0) {
-        return deadwire_finish_with_shutdown(122, 134);
+        return 142;
     }
 
-    return deadwire_finish_with_shutdown(0, 135);
+    if (live_context[0] != 0 || live_context[4] != 0) {
+        return 143;
+    }
+
+    return 0;
 }
 
 void mainCRTStartup(void) {

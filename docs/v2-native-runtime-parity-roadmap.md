@@ -23,6 +23,7 @@ CURRENT V2 PROOF:
 - V2 tick path accepts a loopback client and routes through the request step
 - deadwire_v2_runtime.exe runs a bounded multi-request live smoke path and exits nonzero on failure
 - V2 bounded smoke loop tracks target count, completed count, and last result
+- V2 long-mode controller tracks target count, completed count, stop reason, last result, and shutdown result
 - V2 shutdown checks live socket reset, accepted socket sentinel reset, and idempotent live close
 - make verify-triple-thread reaches verify-v2final and executes the V2 runtime exe
 ```
@@ -30,7 +31,7 @@ CURRENT V2 PROOF:
 ```txt
 NOT YET TRUE:
 - default server does not run on the V2 runtime yet
-- no long-running V2 listener mode yet
+- no unbounded V2 listener mode yet
 - no multicore scaling claim
 - no public internet hardening claim
 - no TLS, CGI, async, or framework layer
@@ -220,19 +221,26 @@ ACTIVE. LOOP STATE IS CHECKED BY THE V2 SMOKE EXE.
 ### V2.6: Long-Running V2 Mode
 
 ```txt
-- opt-in executable can run a bounded listener loop
-- shutdown path is explicit
-- errors have stable exit codes
+- opt-in executable owns a long-mode controller
+- target count is explicit
+- completed count must reach the target
+- stop reason must be target-reached
+- last result and shutdown result must end at zero
 - default server still untouched until parity is proven
 ```
 
 Pass condition:
 
 ```txt
-bounded multi-request smoke passes
-bounded loop proof passes
-shutdown proof passes
-no leaked socket handle in local probe
+make build-v2-runtime
+.\build\deadwire_v2_runtime.exe
+make verify-triple-thread
+```
+
+Status:
+
+```txt
+ACTIVE AS A BOUNDED OPT-IN LONG-MODE PROOF. NOT A DEFAULT SERVER CLAIM.
 ```
 
 ### V2.7: Default Server Parity Gate
@@ -278,7 +286,7 @@ NO RUNTIME MAGIC THAT CANNOT BE EXPLAINED AT THE ABI LEVEL.
 
 ```txt
 NEXT PATCH:
-- move from bounded loop proof to long-running V2 mode sketch
+- move from long-mode proof to V1/V2 parity probes
 - keep default server wording honest
 - do not claim public server performance from the local V2 microbench
 ```
