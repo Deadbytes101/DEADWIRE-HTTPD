@@ -18,7 +18,7 @@ $Budget=[ordered]@{
     'dw_runtime_accept_enqueue'=1
     'dw_runtime_output_drain'=1
     'dw_runtime_worker_take'=6
-    'dw_runtime_worker_complete'=7
+    'dw_runtime_worker_complete'=5
     'dw_runtime_work_step'=2
 }
 foreach($Name in $Budget.Keys){
