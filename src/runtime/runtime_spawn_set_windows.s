@@ -5,7 +5,7 @@
 # It is not linked into the default server build.
 
 .extern dw_runtime_accept_entry
-.extern dw_runtime_work_entry
+.extern dw_runtime_http_engine_entry
 .extern dw_runtime_spawn_entry
 .extern dw_runtime_close_handle
 
@@ -52,7 +52,7 @@ dw_runtime_spawn_lanes:
     mov rdx, qword ptr [r10 + DW_SPAWN_WORK_CONTEXT_PTR]
     test rdx, rdx
     je .bad
-    lea rcx, [rip + dw_runtime_work_entry]
+    lea rcx, [rip + dw_runtime_http_engine_entry]
     mov r8, qword ptr [r10 + DW_SPAWN_WORK_THREAD_ID_PTR]
     call dw_runtime_spawn_entry
     test rax, rax
