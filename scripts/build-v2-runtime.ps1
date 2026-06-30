@@ -7,7 +7,7 @@ $LaneSetPath = Join-Path $RepoRoot 'src/runtime/runtime_spawn_set_windows.s'
 $ExtraPath = Join-Path $RepoRoot 'src/runtime/runtime_handle_windows.s'
 $JoinPath = Join-Path $RepoRoot 'src/runtime/runtime_join_windows.s'
 $RunPath = Join-Path $RepoRoot 'src/runtime/runtime_run_windows.s'
-$BootPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.s'
+$BootPath = Join-Path $RepoRoot 'src/runtime/runtime_boot_windows.s'
 $RuntimeObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime.o'
 $LaneSetObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_lanes.o'
 $ExtraObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_extra.o'
@@ -16,7 +16,7 @@ $RunObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_run.o'
 $BootObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.o'
 $ExePath = Join-Path $BuildDir 'deadwire_v2_runtime.exe'
 
-foreach ($Path in @($RuntimePath, $LaneSetPath, $ExtraPath, $JoinPath, $RunPath)) {
+foreach ($Path in @($RuntimePath, $LaneSetPath, $ExtraPath, $JoinPath, $RunPath, $BootPath)) {
     if (-not (Test-Path $Path)) {
         throw "missing V2 runtime source: $Path"
     }
@@ -25,20 +25,6 @@ foreach ($Path in @($RuntimePath, $LaneSetPath, $ExtraPath, $JoinPath, $RunPath)
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
-
-@'
-.intel_syntax noprefix
-.global mainCRTStartup
-.extern dw_runtime_main
-.extern ExitProcess
-
-.section .text
-mainCRTStartup:
-    sub rsp, 40
-    call dw_runtime_main
-    xor ecx, ecx
-    call ExitProcess
-'@ | Set-Content -Encoding ASCII $BootPath
 
 & as --64 -o $RuntimeObjectPath $RuntimePath
 if ($LASTEXITCODE -ne 0) {
