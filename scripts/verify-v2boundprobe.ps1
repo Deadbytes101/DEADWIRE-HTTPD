@@ -56,3 +56,6 @@ int main(void){
 & gcc -o $EX $CO $RO $LO $AO $BO $TO $BDO $CLO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EX; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2boundprobe: ok'
+$ModeProbe=Join-Path $R 'scripts/verify-v2modeprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ModeProbe
+if($LASTEXITCODE){throw "mode probe $LASTEXITCODE"}
