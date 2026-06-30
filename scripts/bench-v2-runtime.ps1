@@ -14,14 +14,17 @@ $BuildDir = Join-Path $RepoRoot 'build'
 $GenHot = Join-Path $RepoRoot 'scripts/gen-v2-runtime-hot.ps1'
 $HotSource = Join-Path $BuildDir 'deadwire_v2_runtime_hot.s'
 $EngineSource = Join-Path $RepoRoot 'src/runtime/runtime_http_engine_entry_windows.s'
+$RouteSource = Join-Path $RepoRoot 'src/runtime/runtime_route_windows.s'
 $HotObject = Join-Path $BuildDir 'bench_v2_runtime_hot.o'
 $EngineObject = Join-Path $BuildDir 'bench_v2_http_engine.o'
+$RouteObject = Join-Path $BuildDir 'bench_v2_runtime_route.o'
 $HarnessSource = Join-Path $BuildDir 'bench_v2_runtime.c'
 $HarnessExe = Join-Path $BuildDir 'bench_v2_runtime.exe'
 
 if (!(Test-Path $BuildDir)) { New-Item -ItemType Directory -Path $BuildDir | Out-Null }
 if (!(Test-Path $GenHot)) { throw "missing $GenHot" }
 if (!(Test-Path $EngineSource)) { throw "missing $EngineSource" }
+if (!(Test-Path $RouteSource)) { throw "missing $RouteSource" }
 
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $GenHot
 if ($LASTEXITCODE) { throw "gen hot failed $LASTEXITCODE" }
@@ -29,6 +32,8 @@ if ($LASTEXITCODE) { throw "gen hot failed $LASTEXITCODE" }
 if ($LASTEXITCODE) { throw "assemble hot runtime failed $LASTEXITCODE" }
 & as --64 -o $EngineObject $EngineSource
 if ($LASTEXITCODE) { throw "assemble http engine failed $LASTEXITCODE" }
+& as --64 -o $RouteObject $RouteSource
+if ($LASTEXITCODE) { throw "assemble route boundary failed $LASTEXITCODE" }
 
 @'
 #include <stdint.h>
@@ -79,6 +84,7 @@ $GccArgs = @(
     $HarnessSource,
     $HotObject,
     $EngineObject,
+    $RouteObject,
     '-lws2_32',
     '-lkernel32'
 )

@@ -15,6 +15,38 @@ if (-not (Test-Path $BuildDir)) {
 
 $Source = Get-Content -Raw -Encoding UTF8 $SourcePath
 
+$RouteExternOld = @'
+.extern CreateThread
+'@
+
+$RouteExternNew = @'
+.extern CreateThread
+.extern dw_runtime_select_route
+'@
+
+$RouteHookOld = @'
+    cdqe
+    mov qword ptr [rbp - 40], rax
+
+    mov rcx, qword ptr [rbp - 16]
+    mov rdx, qword ptr [rbp - 40]
+    call dw_runtime_request_is_get
+'@
+
+$RouteHookNew = @'
+    cdqe
+    mov qword ptr [rbp - 40], rax
+
+    mov rcx, qword ptr [rbp - 16]
+    mov rdx, qword ptr [rbp - 40]
+    call dw_runtime_select_route
+    mov dword ptr [rbp - 44], eax
+
+    mov rcx, qword ptr [rbp - 16]
+    mov rdx, qword ptr [rbp - 40]
+    call dw_runtime_request_is_get
+'@
+
 $AcceptOld = @'
 # dw_runtime_accept_enqueue(input_queue rcx, client rdx) maps to the accept lane handoff boundary.
 dw_runtime_accept_enqueue:
@@ -233,6 +265,8 @@ dw_runtime_work_step:
 '@
 
 $Hot = $Source
+$Hot = $Hot.Replace($RouteExternOld, $RouteExternNew)
+$Hot = $Hot.Replace($RouteHookOld, $RouteHookNew)
 $Hot = $Hot.Replace($AcceptOld, $AcceptNew)
 $Hot = $Hot.Replace($DrainOld, $DrainNew)
 $Hot = $Hot.Replace($TakeOld, $TakeNew)
@@ -246,6 +280,9 @@ if (-not $Hot.Contains('dw_runtime_accept_enqueue:')) {
     throw 'generated source missing accept enqueue symbol'
 }
 foreach ($Needle in @(
+    '.extern dw_runtime_select_route',
+    'call dw_runtime_select_route',
+    'mov dword ptr [rbp - 44], eax',
     'jmp dw_runtime_queue_push',
     'jmp dw_runtime_queue_pop',
     'dw_runtime_worker_take_next_ready:',

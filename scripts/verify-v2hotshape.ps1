@@ -23,4 +23,7 @@ if((Block 'dw_runtime_output_drain') -notmatch 'jmp\s+dw_runtime_queue_pop'){thr
 if((Block 'dw_runtime_worker_take') -match 'call\s+dw_runtime_queue_pop'){throw 'worker take still calls queue pop'}
 if((Block 'dw_runtime_worker_complete') -match 'call\s+dw_runtime_queue_push'){throw 'worker complete still calls queue push'}
 if((Block 'dw_runtime_work_step') -match '\[rbp'){throw 'work step still uses stack frame'}
+$Handle=Block 'dw_runtime_handle_client'
+if($Handle -notmatch 'call\s+dw_runtime_select_route'){throw 'handle client does not call runtime route selector'}
+if($Handle -notmatch 'mov\s+dword ptr \[rbp - 44\], eax'){throw 'handle client does not keep selected route result'}
 Write-Output 'verify-v2hotshape: ok'
