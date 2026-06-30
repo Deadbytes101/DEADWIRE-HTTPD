@@ -65,23 +65,36 @@ make run
 build/deadwire.exe                 DEFAULT CLOSE-AFTER-RESPONSE SERVER
 build/deadwire_accesslog_off.exe   QUIET CLOSE-AFTER-RESPONSE BENCH SERVER
 build/deadwire_keepalive.exe       STABLE OPT-IN KEEP-ALIVE SERVER
+build/deadwire_v2_runtime.exe      OPT-IN V2 LIVE SMOKE RUNTIME
 ```
 
 ```sh
 make build-quiet
 make build-keepalive
 make verify-keepalive
+make build-v2-runtime
+make verify-triple-thread
 ```
 
-## V2 DIRECTION
+## V2 STATUS
 
 ```txt
 V1.3.0 IS RELEASED.
-V2 TARGETS A REAL NATIVE RUNTIME:
-THREAD ABSTRACTION, SYNCHRONIZATION LAYER, WORKER POOL, AND ASSEMBLY-FIRST SERVER CORE.
+THE DEFAULT SERVER PATH IS STILL THE CLOSE-AFTER-RESPONSE V1 SERVER.
+V2 IS OPT-IN AND PROVED BY LOCAL VERIFY GATES.
 ```
 
-SEE `docs/v2-native-runtime-parity-roadmap.md`.
+```txt
+CURRENT V2 PROOF:
+- FIXED RUNTIME SHAPE: SUPERVISOR / ACCEPTOR / HTTP ENGINE
+- NO WORKER POOL
+- NO THREAD-PER-CONNECTION
+- V2 TICK ACCEPTS A LOOPBACK CLIENT AND RUNS THE HTTP REQUEST STEP
+- DEADWIRE_V2_RUNTIME.EXE OPENS LOOPBACK, SENDS ONE GET, CHECKS THE RESPONSE, AND CLOSES CLEANLY
+- MAKE VERIFY-TRIPLE-THREAD RUNS THE V2 LIVE SMOKE EXE THROUGH VERIFY-V2FINAL
+```
+
+SEE `docs/v2-native-runtime-parity-roadmap.md` AND `docs/v2-triple-thread-runtime.md`.
 
 ## SCOPE
 
@@ -104,9 +117,11 @@ THIS IS A CONNECTION-REUSE WIN, NOT A CONCURRENCY FEATURE.
 make bench-native
 make bench-native-quiet
 make bench-native-keepalive
+make bench-v2-runtime
 ```
 
 SEE `BENCHMARKS.md` AND `docs/v1.3-keepalive-native-bench.md` FOR RECORDED RUNS.
+V2 RUNTIME MICROBENCH NUMBERS ARE LOCAL HANDOFF NUMBERS, NOT PUBLIC SERVER BENCHMARK CLAIMS.
 
 ## LIMITS
 
