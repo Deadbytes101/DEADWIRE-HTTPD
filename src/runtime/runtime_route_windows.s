@@ -76,6 +76,7 @@ dw_runtime_select_route:
     mov rbp, rsp
     sub rsp, 64
 
+    movsxd rdx, edx
     mov qword ptr [rbp - 8], rcx
     mov qword ptr [rbp - 16], rdx
 
