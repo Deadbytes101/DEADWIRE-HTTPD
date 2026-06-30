@@ -37,6 +37,9 @@ try {
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2spawn.ps1
     Check-Status 'verify-v2spawn'
 
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2set.ps1
+    Check-Status 'verify-v2set'
+
     make verify
     Check-Status 'make verify'
 
