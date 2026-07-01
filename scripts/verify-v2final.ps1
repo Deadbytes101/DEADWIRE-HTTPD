@@ -6,6 +6,7 @@ $RequestProbe=Join-Path $R 'scripts/verify-v2requestprobe.ps1'
 $LivePathProbe=Join-Path $R 'scripts/verify-v2livepath.ps1'
 $AssetsProbe=Join-Path $R 'scripts/verify-v2assets.ps1'
 $MakePathProbe=Join-Path $R 'scripts/verify-v2makepath.ps1'
+$TargetProbe=Join-Path $R 'scripts/verify-v2target.ps1'
 $FinalGateProbe=Join-Path $R 'scripts/verify-v2finalgate.ps1'
 $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
@@ -21,6 +22,7 @@ if(!(Test-Path $RequestProbe)){throw "missing $RequestProbe"}
 if(!(Test-Path $LivePathProbe)){throw "missing $LivePathProbe"}
 if(!(Test-Path $AssetsProbe)){throw "missing $AssetsProbe"}
 if(!(Test-Path $MakePathProbe)){throw "missing $MakePathProbe"}
+if(!(Test-Path $TargetProbe)){throw "missing $TargetProbe"}
 if(!(Test-Path $FinalGateProbe)){throw "missing $FinalGateProbe"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
@@ -33,6 +35,8 @@ if(!(Test-Path $SelectChainProbe)){throw "missing $SelectChainProbe"}
 if($LASTEXITCODE){throw "v2 final gate $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $MakePathProbe
 if($LASTEXITCODE){throw "v2 make path $LASTEXITCODE"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $TargetProbe
+if($LASTEXITCODE){throw "v2 target $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe
 if($LASTEXITCODE){throw "v2 select chain $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectClientProbe
