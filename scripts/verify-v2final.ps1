@@ -8,6 +8,7 @@ $AssetsProbe=Join-Path $R 'scripts/verify-v2assets.ps1'
 $MakePathProbe=Join-Path $R 'scripts/verify-v2makepath.ps1'
 $TargetProbe=Join-Path $R 'scripts/verify-v2target.ps1'
 $PostBuildProbe=Join-Path $R 'scripts/verify-v2postbuild.ps1'
+$TopologyProbe=Join-Path $R 'scripts/verify-v2topology.ps1'
 $FinalGateProbe=Join-Path $R 'scripts/verify-v2finalgate.ps1'
 $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
@@ -25,6 +26,7 @@ if(!(Test-Path $AssetsProbe)){throw "missing $AssetsProbe"}
 if(!(Test-Path $MakePathProbe)){throw "missing $MakePathProbe"}
 if(!(Test-Path $TargetProbe)){throw "missing $TargetProbe"}
 if(!(Test-Path $PostBuildProbe)){throw "missing $PostBuildProbe"}
+if(!(Test-Path $TopologyProbe)){throw "missing $TopologyProbe"}
 if(!(Test-Path $FinalGateProbe)){throw "missing $FinalGateProbe"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
@@ -41,6 +43,8 @@ if($LASTEXITCODE){throw "v2 make path $LASTEXITCODE"}
 if($LASTEXITCODE){throw "v2 target $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PostBuildProbe
 if($LASTEXITCODE){throw "v2 post build $LASTEXITCODE"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $TopologyProbe
+if($LASTEXITCODE){throw "v2 topology $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe
 if($LASTEXITCODE){throw "v2 select chain $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectClientProbe
