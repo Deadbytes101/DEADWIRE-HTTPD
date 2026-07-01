@@ -27,6 +27,9 @@ if($LASTEXITCODE){throw "client response probe $LASTEXITCODE"}
 $RouteFlowProbe=Join-Path $R 'scripts/verify-v2routeflowprobe.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RouteFlowProbe
 if($LASTEXITCODE){throw "route flow probe $LASTEXITCODE"}
+$BootShapeProbe=Join-Path $R 'scripts/verify-v2bootshape.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $BootShapeProbe
+if($LASTEXITCODE){throw "boot shape $LASTEXITCODE"}
 $B=Join-Path $R 'build'
 if(!(Test-Path $B)){New-Item -ItemType Directory -Path $B|Out-Null}
 $RT=Join-Path $R 'src/runtime/runtime_windows.s'
