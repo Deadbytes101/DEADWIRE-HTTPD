@@ -7,8 +7,7 @@ extern int dw_runtime_worker_init(uint64_t *worker, uint64_t id, uint64_t *input
 extern int dw_runtime_live_open(uint64_t *live_context);
 extern int dw_runtime_live_close(uint64_t *live_context);
 extern int dw_runtime_mode_bound(uint64_t *mode_context);
-extern int dw_runtime_select_route(const char *request, int request_length);
-extern int dw_runtime_client_select_response(uint64_t *client, int route, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
+extern int dw_runtime_select_client_response(uint64_t *client, const char *request, int request_length, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
 
 #define DEADWIRE_SMOKE_REQUESTS 8
 #define DEADWIRE_QUEUE_CAPACITY 4
@@ -340,7 +339,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         request_length = (int)(sizeof(css_get_request) - 1);
     }
 
-    selected_route = dw_runtime_select_route(request, request_length);
+    selected_route = dw_runtime_select_client_response(client_context, request, request_length, (uint64_t)health_response_context, (uint64_t)root_response_context, (uint64_t)css_response_context, (uint64_t)missing_response_context);
     expected_status = health_status;
     expected_status_length = (int)(sizeof(health_status) - 1);
     expected_type_line = text_type_line;
@@ -384,10 +383,6 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_response = (uint64_t)css_response_context;
     } else if (selected_route != DEADWIRE_ROUTE_HEALTH) {
         return 10 + request_index;
-    }
-
-    if (dw_runtime_client_select_response(client_context, selected_route, (uint64_t)health_response_context, (uint64_t)root_response_context, (uint64_t)css_response_context, (uint64_t)missing_response_context)) {
-        return 150 + request_index;
     }
 
     if (client_context[3] != expected_response) {
