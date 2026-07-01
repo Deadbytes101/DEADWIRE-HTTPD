@@ -3,12 +3,14 @@ $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $Boot=Join-Path $R 'src/runtime/runtime_boot_windows.c'
 $RouteFlow=Join-Path $R 'scripts/verify-v2routeflowprobe.ps1'
 $Mode=Join-Path $R 'scripts/verify-v2modeprobe.ps1'
+$Request=Join-Path $R 'scripts/verify-v2requestprobe.ps1'
 $Handle=Join-Path $R 'scripts/verify-v2handleprobe.ps1'
 $SelectClient=Join-Path $R 'scripts/verify-v2selectclientprobe.ps1'
-foreach($P in @($Boot,$RouteFlow,$Mode,$Handle,$SelectClient)){if(!(Test-Path $P)){throw "missing $P"}}
+foreach($P in @($Boot,$RouteFlow,$Mode,$Request,$Handle,$SelectClient)){if(!(Test-Path $P)){throw "missing $P"}}
 $BootS=Get-Content -Raw -Encoding UTF8 $Boot
 $RouteFlowS=Get-Content -Raw -Encoding UTF8 $RouteFlow
 $ModeS=Get-Content -Raw -Encoding UTF8 $Mode
+$RequestS=Get-Content -Raw -Encoding UTF8 $Request
 $HandleS=Get-Content -Raw -Encoding UTF8 $Handle
 $SelectClientS=Get-Content -Raw -Encoding UTF8 $SelectClient
 function Has([string]$Text,[string]$Needle,[string]$Label){if(!$Text.Contains($Needle)){throw "missing $Label"}}
@@ -32,6 +34,11 @@ Has $ModeS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'mode response tabl
 Has $ModeS 'if(client[3])return 6;' 'mode starts without selected response'
 Has $ModeS 'if(dw_runtime_mode_bound(mc))return 8;' 'mode bound call'
 Has $ModeS 'if(client[3]!=(uint64_t)resp)return 10;' 'mode selected response result'
+Has $RequestS 'deadwire_v2_runtime_hot.s' 'request hot source'
+Has $RequestS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'request response table client'
+Has $RequestS 'if(client[3])return 8;' 'request starts without selected response'
+Has $RequestS 'if(dw_runtime_http_request_step(worker))return 10;' 'request http engine call'
+Has $RequestS 'if(client[3]!=(uint64_t)resp)return 11;' 'request selected response result'
 Has $HandleS 'deadwire_v2_runtime_hot.s' 'handle hot source'
 Has $HandleS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'handle response table client'
 Has $HandleS 'if(client[3])return 6;' 'handle starts without selected response'
@@ -48,6 +55,9 @@ Lacks $ModeS $Select 'mode external preselect'
 Lacks $ModeS 'client[4]={99,(uint64_t)reqbuf,sizeof(reqbuf),(uint64_t)resp}' 'mode old client preload'
 Lacks $ModeS 'dw_runtime_select_route(request, request_length)' 'mode split route'
 Lacks $ModeS 'dw_runtime_client_select_response(client, route' 'mode split setter'
+Lacks $RequestS $Select 'request external preselect'
+Lacks $RequestS 'client[4]={99,(uint64_t)reqbuf,sizeof(reqbuf),(uint64_t)resp}' 'request old client preload'
+Lacks $RequestS 'src/runtime/runtime_windows.s' 'request old source-map input'
 Lacks $HandleS $Select 'handle external preselect'
 Lacks $HandleS 'client[3]=(uint64_t)resp;' 'handle direct preload'
 Lacks $HandleS 'client[3] = (uint64_t)resp;' 'handle spaced preload'

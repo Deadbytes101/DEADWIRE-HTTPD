@@ -2,18 +2,24 @@ $ErrorActionPreference='Stop'
 $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $B=Join-Path $R 'build'
 if(!(Test-Path $B)){New-Item -ItemType Directory -Path $B|Out-Null}
-$RT=Join-Path $R 'src/runtime/runtime_windows.s'
+$Gen=Join-Path $R 'scripts/gen-v2-runtime-hot.ps1'
+$RT=Join-Path $B 'deadwire_v2_runtime_hot.s'
+$ROUTE=Join-Path $R 'src/runtime/runtime_route_windows.s'
 $LV=Join-Path $R 'src/runtime/runtime_live_windows.s'
 $AC=Join-Path $R 'src/runtime/runtime_accept_windows.s'
 $HE=Join-Path $R 'src/runtime/runtime_http_engine_entry_windows.s'
 $CL=Join-Path $R 'src/runtime/runtime_live_close_windows.s'
-foreach($P in @($RT,$LV,$AC,$HE,$CL)){if(!(Test-Path $P)){throw "missing $P"}}
+foreach($P in @($Gen,$ROUTE,$LV,$AC,$HE,$CL)){if(!(Test-Path $P)){throw "missing $P"}}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Gen
+if($LASTEXITCODE){throw "gen hot $LASTEXITCODE"}
 $RO=Join-Path $B 'v2request_runtime.o'
+$RTO=Join-Path $B 'v2request_route.o'
 $LO=Join-Path $B 'v2request_live.o'
 $AO=Join-Path $B 'v2request_accept.o'
 $HO=Join-Path $B 'v2request_http.o'
 $CO=Join-Path $B 'v2request_close.o'
 & as --64 -o $RO $RT; if($LASTEXITCODE){throw 'as runtime'}
+& as --64 -o $RTO $ROUTE; if($LASTEXITCODE){throw 'as route'}
 & as --64 -o $LO $LV; if($LASTEXITCODE){throw 'as live'}
 & as --64 -o $AO $AC; if($LASTEXITCODE){throw 'as accept'}
 & as --64 -o $HO $HE; if($LASTEXITCODE){throw 'as http'}
@@ -45,7 +51,7 @@ int main(void){
  uint64_t in_q[4]={0,0,4,(uint64_t)in_items};
  uint64_t out_q[4]={0,0,4,(uint64_t)out_items};
  uint64_t worker[5]={0};
- uint64_t live[5]={0,0,0,0,99}, client[4]={99,(uint64_t)reqbuf,sizeof(reqbuf),(uint64_t)resp};
+ uint64_t live[5]={0,0,0,0,99}, client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0,(uint64_t)resp,(uint64_t)resp,(uint64_t)resp,(uint64_t)resp};
  SOCKET out=INVALID_SOCKET;
  a.sin_family=AF_INET; a.sin_port=0; a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
  live[1]=(uint64_t)&a; live[2]=sizeof(a); live[3]=1;
@@ -56,19 +62,21 @@ int main(void){
  if(connect(out,(struct sockaddr*)&b,sizeof(b)))return 5;
  if(dw_runtime_live_accept_once(live,client))return 6;
  if(dw_runtime_queue_push(in_q,(uint64_t)client))return 7;
- if(send(out,req,(int)(sizeof(req)-1),0)!=(int)(sizeof(req)-1))return 8;
- if(dw_runtime_http_request_step(worker))return 9;
- if(dw_runtime_output_drain(out_q)!=(uint64_t)client)return 10;
- int n=recv(out,outbuf,sizeof(outbuf)-1,0); if(n<=0)return 11; outbuf[n]=0;
- if(!strstr(outbuf,"HTTP/1.1 200 OK"))return 12;
- if(!strstr(outbuf,"V2 REQUEST OK"))return 13;
- if(worker[4]!=1||in_q[0]!=1||in_q[1]!=1||out_q[0]!=1||out_q[1]!=1)return 14;
+ if(client[3])return 8;
+ if(send(out,req,(int)(sizeof(req)-1),0)!=(int)(sizeof(req)-1))return 9;
+ if(dw_runtime_http_request_step(worker))return 10;
+ if(client[3]!=(uint64_t)resp)return 11;
+ if(dw_runtime_output_drain(out_q)!=(uint64_t)client)return 12;
+ int n=recv(out,outbuf,sizeof(outbuf)-1,0); if(n<=0)return 13; outbuf[n]=0;
+ if(!strstr(outbuf,"HTTP/1.1 200 OK"))return 14;
+ if(!strstr(outbuf,"V2 REQUEST OK"))return 15;
+ if(worker[4]!=1||in_q[0]!=1||in_q[1]!=1||out_q[0]!=1||out_q[1]!=1)return 16;
  closesocket((SOCKET)client[0]); closesocket(out);
- if(dw_runtime_live_close(live))return 15;
+ if(dw_runtime_live_close(live))return 17;
  return live[0]||live[4];
 }
 '@|Set-Content -Encoding ASCII $C
 & gcc -c -o $OBJ $C; if($LASTEXITCODE){throw 'cc'}
-& gcc -o $EX $OBJ $RO $LO $AO $HO $CO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
+& gcc -o $EX $OBJ $RO $RTO $LO $AO $HO $CO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EX; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2requestprobe: ok'
