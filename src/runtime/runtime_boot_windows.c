@@ -8,6 +8,7 @@ extern int dw_runtime_live_open(uint64_t *live_context);
 extern int dw_runtime_live_close(uint64_t *live_context);
 extern int dw_runtime_mode_bound(uint64_t *mode_context);
 extern int dw_runtime_select_route(const char *request, int request_length);
+extern int dw_runtime_client_select_response(uint64_t *client, int route, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
 
 #define DEADWIRE_SMOKE_REQUESTS 8
 #define DEADWIRE_QUEUE_CAPACITY 4
@@ -32,7 +33,10 @@ static uint64_t bound_context[4];
 static uint64_t mode_context[2];
 static uint64_t loop_context[3];
 static uint64_t long_context[5];
-static uint64_t response_context[6];
+static uint64_t health_response_context[6];
+static uint64_t root_response_context[6];
+static uint64_t css_response_context[6];
+static uint64_t missing_response_context[6];
 static char request_buffer[512];
 static char response_buffer[4096];
 
@@ -198,13 +202,20 @@ static int deadwire_response_has_body(const char *buffer, int length) {
     return 1;
 }
 
-static void deadwire_set_response(const char *status, int status_length, const char *content_type, int content_type_length, const char *body, int body_length) {
+static void deadwire_set_response(uint64_t *response_context, const char *status, int status_length, const char *content_type, int content_type_length, const char *body, int body_length) {
     response_context[0] = (uint64_t)status;
     response_context[1] = (uint64_t)status_length;
     response_context[2] = (uint64_t)content_type;
     response_context[3] = (uint64_t)content_type_length;
     response_context[4] = (uint64_t)body;
     response_context[5] = (uint64_t)body_length;
+}
+
+static void deadwire_prepare_responses(void) {
+    deadwire_set_response(health_response_context, health_status, (int)(sizeof(health_status) - 1), text_type, (int)(sizeof(text_type) - 1), health_body, (int)(sizeof(health_body) - 1));
+    deadwire_set_response(root_response_context, health_status, (int)(sizeof(health_status) - 1), html_type, (int)(sizeof(html_type) - 1), root_body, (int)(sizeof(root_body) - 1));
+    deadwire_set_response(css_response_context, health_status, (int)(sizeof(health_status) - 1), css_type, (int)(sizeof(css_type) - 1), css_body, (int)(sizeof(css_body) - 1));
+    deadwire_set_response(missing_response_context, missing_status, (int)(sizeof(missing_status) - 1), text_type, (int)(sizeof(text_type) - 1), missing_body, (int)(sizeof(missing_body) - 1));
 }
 
 static void deadwire_close_socket_if_real(SOCKET socket_value) {
@@ -265,7 +276,7 @@ static void deadwire_prepare_tick(void) {
     client_context[0] = (uint64_t)DEADWIRE_SENTINEL_SOCKET;
     client_context[1] = (uint64_t)request_buffer;
     client_context[2] = sizeof(request_buffer);
-    client_context[3] = (uint64_t)response_context;
+    client_context[3] = 0;
 
     tick_context[5] = 99;
     tick_context[6] = 99;
@@ -308,6 +319,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     int response_type_length;
     int expect_body;
     int received;
+    uint64_t expected_response;
     uint64_t expected_cursor;
 
     deadwire_prepare_tick();
@@ -339,6 +351,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
     expected_body_length = (int)(sizeof(health_body) - 1);
     response_type = text_type;
     response_type_length = (int)(sizeof(text_type) - 1);
+    expected_response = (uint64_t)health_response_context;
     expect_body = request_index != 1;
 
     if (selected_route == DEADWIRE_ROUTE_MISSING) {
@@ -348,6 +361,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_length_length = (int)(sizeof(missing_length) - 1);
         expected_body = missing_body;
         expected_body_length = (int)(sizeof(missing_body) - 1);
+        expected_response = (uint64_t)missing_response_context;
     } else if (selected_route == DEADWIRE_ROUTE_ROOT) {
         expected_type_line = html_type_line;
         expected_type_line_length = (int)(sizeof(html_type_line) - 1);
@@ -357,6 +371,7 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_body_length = (int)(sizeof(root_body) - 1);
         response_type = html_type;
         response_type_length = (int)(sizeof(html_type) - 1);
+        expected_response = (uint64_t)root_response_context;
     } else if (selected_route == DEADWIRE_ROUTE_CSS) {
         expected_type_line = css_type_line;
         expected_type_line_length = (int)(sizeof(css_type_line) - 1);
@@ -366,11 +381,18 @@ static int deadwire_run_probe_request(struct sockaddr_in *bound_addr, int reques
         expected_body_length = (int)(sizeof(css_body) - 1);
         response_type = css_type;
         response_type_length = (int)(sizeof(css_type) - 1);
+        expected_response = (uint64_t)css_response_context;
     } else if (selected_route != DEADWIRE_ROUTE_HEALTH) {
         return 10 + request_index;
     }
 
-    deadwire_set_response(expected_status, expected_status_length, response_type, response_type_length, expected_body, expected_body_length);
+    if (dw_runtime_client_select_response(client_context, selected_route, (uint64_t)health_response_context, (uint64_t)root_response_context, (uint64_t)css_response_context, (uint64_t)missing_response_context)) {
+        return 150 + request_index;
+    }
+
+    if (client_context[3] != expected_response) {
+        return 160 + request_index;
+    }
 
     peer_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (peer_socket == INVALID_SOCKET) {
@@ -541,7 +563,7 @@ static int deadwire_v2_live_smoke(void) {
     output_queue[2] = DEADWIRE_QUEUE_CAPACITY;
     output_queue[3] = (uint64_t)output_items;
 
-    deadwire_set_response(health_status, (int)(sizeof(health_status) - 1), text_type, (int)(sizeof(text_type) - 1), health_body, (int)(sizeof(health_body) - 1));
+    deadwire_prepare_responses();
 
     tick_context[0] = (uint64_t)live_context;
     tick_context[1] = (uint64_t)client_context;
