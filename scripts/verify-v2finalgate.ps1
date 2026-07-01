@@ -1,0 +1,27 @@
+$ErrorActionPreference='Stop'
+$R=Resolve-Path (Join-Path $PSScriptRoot '..')
+$Final=Join-Path $R 'scripts/verify-v2final.ps1'
+if(!(Test-Path $Final)){throw "missing $Final"}
+$S=Get-Content -Raw -Encoding UTF8 $Final
+function Has([string]$Needle,[string]$Label){if(!$S.Contains($Needle)){throw "missing $Label"}}
+function Before([string]$Left,[string]$Right,[string]$Label){$L=$S.IndexOf($Left);$R=$S.IndexOf($Right);if($L -lt 0 -or $R -lt 0 -or $L -ge $R){throw "bad order $Label"}}
+Has "`$SelectChainProbe=Join-Path `$R 'scripts/verify-v2selectchain.ps1'" 'select chain probe binding'
+Has "`$SelectClientProbe=Join-Path `$R 'scripts/verify-v2selectclientprobe.ps1'" 'select client probe binding'
+Has "`$BuildSourceProbe=Join-Path `$R 'scripts/verify-v2buildsource.ps1'" 'build source probe binding'
+Has "`$RequestProbe=Join-Path `$R 'scripts/verify-v2requestprobe.ps1'" 'request coverage probe binding'
+Has "`$HotExeProbe=Join-Path `$R 'scripts/verify-v2hotexe.ps1'" 'hot exe probe binding'
+Has "`$BudgetProbe=Join-Path `$R 'scripts/verify-v2budget.ps1'" 'budget probe binding'
+Has "`$SizeProbe=Join-Path `$R 'scripts/verify-v2size.ps1'" 'size probe binding'
+Has "`$CallBudgetProbe=Join-Path `$R 'scripts/verify-v2callbudget.ps1'" 'call budget probe binding'
+Has "`$BranchBudgetProbe=Join-Path `$R 'scripts/verify-v2branchbudget.ps1'" 'branch budget probe binding'
+Has '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe' 'select chain execution'
+Has '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $BuildSourceProbe' 'build source execution'
+Has '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RequestProbe' 'request coverage execution'
+Has '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build' 'build execution'
+Has '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $HotExeProbe' 'hot exe execution'
+Has '& $Program' 'proof executable run'
+Before '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe' '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build' 'select chain before build'
+Before '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $BuildSourceProbe' '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build' 'build source before build'
+Before '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RequestProbe' '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build' 'request coverage before build'
+Before '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build' '& $Program' 'build before executable run'
+Write-Output 'verify-v2finalgate: ok'
