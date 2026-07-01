@@ -19,6 +19,7 @@
 .section .text
 .global dw_runtime_request_path_is
 .global dw_runtime_select_route
+.global dw_runtime_response_for_route
 
 # dw_runtime_request_path_is(request rcx, length rdx, path r8, path_length r9) maps to a narrow V2 route match boundary.
 dw_runtime_request_path_is:
@@ -121,4 +122,27 @@ dw_runtime_select_route:
 .dw_runtime_select_route_css:
     mov eax, DW_ROUTE_CSS
     leave
+    ret
+
+# dw_runtime_response_for_route(route rcx, health rdx, root r8, css r9, missing stack5) returns one response context pointer.
+dw_runtime_response_for_route:
+    cmp ecx, DW_ROUTE_HEALTH
+    je .dw_runtime_response_for_route_health
+    cmp ecx, DW_ROUTE_ROOT
+    je .dw_runtime_response_for_route_root
+    cmp ecx, DW_ROUTE_CSS
+    je .dw_runtime_response_for_route_css
+    mov rax, qword ptr [rsp + 40]
+    ret
+
+.dw_runtime_response_for_route_health:
+    mov rax, rdx
+    ret
+
+.dw_runtime_response_for_route_root:
+    mov rax, r8
+    ret
+
+.dw_runtime_response_for_route_css:
+    mov rax, r9
     ret
