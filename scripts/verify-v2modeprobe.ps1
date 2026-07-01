@@ -18,6 +18,9 @@ if($LASTEXITCODE){throw "http engine probe $LASTEXITCODE"}
 $RouteProbe=Join-Path $R 'scripts/verify-v2routeprobe.ps1'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RouteProbe
 if($LASTEXITCODE){throw "route probe $LASTEXITCODE"}
+$ResponseProbe=Join-Path $R 'scripts/verify-v2responseprobe.ps1'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ResponseProbe
+if($LASTEXITCODE){throw "response probe $LASTEXITCODE"}
 $B=Join-Path $R 'build'
 if(!(Test-Path $B)){New-Item -ItemType Directory -Path $B|Out-Null}
 $RT=Join-Path $R 'src/runtime/runtime_windows.s'
