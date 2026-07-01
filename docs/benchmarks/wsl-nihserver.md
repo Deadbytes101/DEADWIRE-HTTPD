@@ -74,6 +74,8 @@ The nihserver binary should be:
 target/nihserver/nihserver
 ```
 
+If nihserver exits before listening with a `syscall_stat` crash, see `docs/benchmarks/nihserver-compat.md`. Keep that result labeled as an external target compatibility experiment.
+
 ## Run a Linux-lane score
 
 Run this from the DEADWIRE repository inside WSL:
