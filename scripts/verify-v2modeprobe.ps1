@@ -78,7 +78,7 @@ int main(void){
  const char body[]="V2 MODE OK";
  uint64_t resp[6]={(uint64_t)status,sizeof(status)-1,(uint64_t)type,sizeof(type)-1,(uint64_t)body,sizeof(body)-1};
  uint64_t ii[4]={0},oi[4]={0},iq[4]={0,0,4,(uint64_t)ii},oq[4]={0,0,4,(uint64_t)oi};
- uint64_t w[5]={0},live[5]={0,0,0,0,99},client[4]={99,(uint64_t)reqbuf,sizeof(reqbuf),(uint64_t)resp},tc[7]={0},bc[4]={0},mc[2]={0};
+ uint64_t w[5]={0},live[5]={0,0,0,0,99},client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0,(uint64_t)resp,(uint64_t)resp,(uint64_t)resp,(uint64_t)resp},tc[7]={0},bc[4]={0},mc[2]={0};
  SOCKET out=INVALID_SOCKET;
  a.sin_family=AF_INET; a.sin_port=0; a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
  live[1]=(uint64_t)&a; live[2]=sizeof(a); live[3]=1;
@@ -89,16 +89,18 @@ int main(void){
  if(getsockname((SOCKET)live[0],(struct sockaddr*)&b,&bl))return 3;
  out=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP); if(out==INVALID_SOCKET)return 4;
  if(connect(out,(struct sockaddr*)&b,sizeof(b)))return 5;
- if(send(out,req,(int)(sizeof(req)-1),0)!=(int)(sizeof(req)-1))return 6;
- if(dw_runtime_mode_bound(mc))return 7;
- if(mc[1]!=0||bc[2]!=1||bc[3]!=0)return 8;
- if(tc[5]!=(uint64_t)client||tc[6]!=0)return 9;
- if(w[4]!=1||iq[0]!=1||iq[1]!=1||oq[0]!=1||oq[1]!=1)return 10;
- int n=recv(out,outbuf,sizeof(outbuf)-1,0); if(n<=0)return 11; outbuf[n]=0;
- if(!strstr(outbuf,"HTTP/1.1 200 OK"))return 12;
- if(!strstr(outbuf,"V2 MODE OK"))return 13;
+ if(client[3])return 6;
+ if(send(out,req,(int)(sizeof(req)-1),0)!=(int)(sizeof(req)-1))return 7;
+ if(dw_runtime_mode_bound(mc))return 8;
+ if(mc[1]!=0||bc[2]!=1||bc[3]!=0)return 9;
+ if(client[3]!=(uint64_t)resp)return 10;
+ if(tc[5]!=(uint64_t)client||tc[6]!=0)return 11;
+ if(w[4]!=1||iq[0]!=1||iq[1]!=1||oq[0]!=1||oq[1]!=1)return 12;
+ int n=recv(out,outbuf,sizeof(outbuf)-1,0); if(n<=0)return 13; outbuf[n]=0;
+ if(!strstr(outbuf,"HTTP/1.1 200 OK"))return 14;
+ if(!strstr(outbuf,"V2 MODE OK"))return 15;
  closesocket((SOCKET)client[0]); closesocket(out);
- if(dw_runtime_live_close(live))return 14;
+ if(dw_runtime_live_close(live))return 16;
  return live[0]||live[4];
 }
 '@|Set-Content -Encoding ASCII $C
