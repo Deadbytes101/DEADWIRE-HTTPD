@@ -32,7 +32,10 @@ if (!(Test-Path $BuildDir)) { New-Item -ItemType Directory -Path $BuildDir | Out
 if (!(Test-Path $BenchSrc)) { throw "bench-external-server: missing bench source: $BenchSrc" }
 
 $cc = if ($env:CC) { $env:CC } else { 'cc' }
-& $cc -O2 -std=c99 -Wall -Wextra -o $BenchExe $BenchSrc -lws2_32
+$CompileArgs = @('-O2', '-std=c99', '-Wall', '-Wextra', '-o', $BenchExe, $BenchSrc)
+$IsWinHost = ($env:OS -eq 'Windows_NT') -or ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows))
+if ($IsWinHost) { $CompileArgs += '-lws2_32' }
+& $cc @CompileArgs
 if ($LASTEXITCODE) { throw "bench-external-server: failed to compile native bench client with $cc" }
 
 $ServerProcess = $null
