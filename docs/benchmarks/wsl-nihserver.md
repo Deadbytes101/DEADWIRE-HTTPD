@@ -77,7 +77,7 @@ target/nihserver/nihserver
 Run this from the DEADWIRE repository inside WSL:
 
 ```sh
-./scripts/bench-score.sh \
+sh scripts/bench-score.sh \
   --left-name DEADWIRE_LINUX \
   --left-exe ./build/deadwire \
   --left-args "19095" \
@@ -115,7 +115,7 @@ Rules:
 If both servers handle keep-alive correctly for the chosen path, add `--keepalive`:
 
 ```sh
-./scripts/bench-score.sh \
+sh scripts/bench-score.sh \
   --left-name DEADWIRE_LINUX \
   --left-exe ./build/deadwire \
   --left-args "19095" \
