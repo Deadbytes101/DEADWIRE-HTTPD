@@ -9,23 +9,24 @@ $BootS=Get-Content -Raw -Encoding UTF8 $Boot
 $RouteFlowS=Get-Content -Raw -Encoding UTF8 $RouteFlow
 $HandleS=Get-Content -Raw -Encoding UTF8 $Handle
 $SelectClientS=Get-Content -Raw -Encoding UTF8 $SelectClient
-function Need([string]$Name,[string]$Text,[string]$Needle){
-    if(!$Text.Contains($Needle)){throw "missing ${Name}: $Needle"}
-}
-function Forbid([string]$Name,[string]$Text,[string]$Needle){
-    if($Text.Contains($Needle)){throw "forbidden ${Name}: $Needle"}
-}
-Need 'boot' $BootS 'extern int dw_runtime_select_client_response'
-Need 'boot' $BootS 'selected_route = dw_runtime_select_client_response(client_context, request, request_length'
-Need 'routeflow' $RouteFlowS 'extern int dw_runtime_select_client_response'
-Need 'routeflow' $RouteFlowS 'int route = dw_runtime_select_client_response(client, request, request_length'
-Need 'handle' $HandleS 'extern int dw_runtime_select_client_response'
-Need 'handle' $HandleS 'if(!dw_runtime_select_client_response(client,req,(int)(sizeof(req)-1)'
-Need 'selectclient' $SelectClientS 'dw_runtime_select_client_response'
-Forbid 'boot' $BootS 'selected_route = dw_runtime_select_route(request, request_length);'
-Forbid 'boot' $BootS 'dw_runtime_client_select_response(client_context, selected_route'
-Forbid 'routeflow' $RouteFlowS 'int route = dw_runtime_select_route(request, request_length);'
-Forbid 'routeflow' $RouteFlowS 'dw_runtime_client_select_response(client, route'
-Forbid 'handle' $HandleS 'client[3]=(uint64_t)resp;'
-Forbid 'handle' $HandleS 'client[3] = (uint64_t)resp;'
+function Has([string]$Text,[string]$Needle,[string]$Label){if(!$Text.Contains($Needle)){throw "missing $Label"}}
+function Lacks([string]$Text,[string]$Needle,[string]$Label){if($Text.Contains($Needle)){throw "forbidden $Label"}}
+$Select='dw_runtime_'+'select_client_response'
+Has $BootS $Select 'boot select boundary'
+Has $BootS 'selected_route = dw_runtime_select_client_response(client_context, request, request_length' 'boot boundary call'
+Has $RouteFlowS $Select 'routeflow select boundary'
+Has $RouteFlowS 'int route = dw_runtime_select_client_response(client, request, request_length' 'routeflow boundary call'
+Has $HandleS 'deadwire_v2_runtime_hot.s' 'handle hot source'
+Has $HandleS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'handle response table client'
+Has $HandleS 'if(client[3])return 6;' 'handle starts without selected response'
+Has $HandleS 'if(dw_runtime_handle_client(client))return 8;' 'handle hot call'
+Has $HandleS 'if(client[3]!=(uint64_t)resp)return 9;' 'handle selected response result'
+Has $SelectClientS $Select 'selectclient probe boundary'
+Lacks $BootS 'selected_route = dw_runtime_select_route(request, request_length);' 'boot split route'
+Lacks $BootS 'dw_runtime_client_select_response(client_context, selected_route' 'boot split setter'
+Lacks $RouteFlowS 'int route = dw_runtime_select_route(request, request_length);' 'routeflow split route'
+Lacks $RouteFlowS 'dw_runtime_client_select_response(client, route' 'routeflow split setter'
+Lacks $HandleS $Select 'handle external preselect'
+Lacks $HandleS 'client[3]=(uint64_t)resp;' 'handle direct preload'
+Lacks $HandleS 'client[3] = (uint64_t)resp;' 'handle spaced preload'
 Write-Output 'verify-v2selectchain: ok'
