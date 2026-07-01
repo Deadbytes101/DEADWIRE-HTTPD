@@ -2,7 +2,6 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $BuildDir = Join-Path $RepoRoot 'build'
-$RuntimeBasePath = Join-Path $RepoRoot 'src/runtime/runtime_windows.s'
 $RuntimeGenScriptPath = Join-Path $RepoRoot 'scripts/gen-v2-runtime-hot.ps1'
 $RuntimePath = Join-Path $BuildDir 'deadwire_v2_runtime_hot.s'
 $LaneSetPath = Join-Path $RepoRoot 'src/runtime/runtime_spawn_set_windows.s'
@@ -38,7 +37,7 @@ $RouteObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_route.o'
 $BootObjectPath = Join-Path $BuildDir 'deadwire_v2_runtime_boot.o'
 $ExePath = Join-Path $BuildDir 'deadwire_v2_runtime.exe'
 
-foreach ($Path in @($RuntimeBasePath, $RuntimeGenScriptPath, $LaneSetPath, $HttpEntryPath, $ExtraPath, $JoinPath, $RunPath, $BootPath, $LivePath, $LiveClosePath, $LiveCyclePath, $AcceptPath, $BridgePath, $TickPath, $BoundPath, $ModePath, $RoutePath)) {
+foreach ($Path in @($RuntimeGenScriptPath, $LaneSetPath, $HttpEntryPath, $ExtraPath, $JoinPath, $RunPath, $BootPath, $LivePath, $LiveClosePath, $LiveCyclePath, $AcceptPath, $BridgePath, $TickPath, $BoundPath, $ModePath, $RoutePath)) {
     if (-not (Test-Path $Path)) {
         throw "missing V2 runtime source: $Path"
     }
