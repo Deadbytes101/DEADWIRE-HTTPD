@@ -3,6 +3,7 @@ $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $Build=Join-Path $R 'scripts/build-v2-runtime.ps1'
 $BuildSourceProbe=Join-Path $R 'scripts/verify-v2buildsource.ps1'
 $RequestProbe=Join-Path $R 'scripts/verify-v2requestprobe.ps1'
+$LivePathProbe=Join-Path $R 'scripts/verify-v2livepath.ps1'
 $FinalGateProbe=Join-Path $R 'scripts/verify-v2finalgate.ps1'
 $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
@@ -15,6 +16,7 @@ $Program=Join-Path $R 'build/deadwire_v2_runtime.exe'
 if(!(Test-Path $Build)){throw "missing $Build"}
 if(!(Test-Path $BuildSourceProbe)){throw "missing $BuildSourceProbe"}
 if(!(Test-Path $RequestProbe)){throw "missing $RequestProbe"}
+if(!(Test-Path $LivePathProbe)){throw "missing $LivePathProbe"}
 if(!(Test-Path $FinalGateProbe)){throw "missing $FinalGateProbe"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
@@ -33,6 +35,8 @@ if($LASTEXITCODE){throw "v2 select client $LASTEXITCODE"}
 if($LASTEXITCODE){throw "v2 build source $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RequestProbe
 if($LASTEXITCODE){throw "v2 request coverage $LASTEXITCODE"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $LivePathProbe
+if($LASTEXITCODE){throw "v2 live path $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Build
 if($LASTEXITCODE){throw "v2 final build $LASTEXITCODE"}
 if(!(Test-Path $Program)){throw "missing $Program"}
