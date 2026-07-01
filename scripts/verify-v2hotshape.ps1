@@ -24,6 +24,11 @@ if((Block 'dw_runtime_worker_take') -match 'call\s+dw_runtime_queue_pop'){throw 
 if((Block 'dw_runtime_worker_complete') -match 'call\s+dw_runtime_queue_push'){throw 'worker complete still calls queue push'}
 if((Block 'dw_runtime_work_step') -match '\[rbp'){throw 'work step still uses stack frame'}
 $Handle=Block 'dw_runtime_handle_client'
-if($Handle -notmatch 'call\s+dw_runtime_select_route'){throw 'handle client does not call runtime route selector'}
+if($Handle -notmatch 'call\s+dw_runtime_select_client_response'){throw 'handle client does not call select-client response boundary'}
+if($Handle -match 'call\s+dw_runtime_select_route'){throw 'handle client still calls split route selector'}
+if($Handle -notmatch 'mov\s+qword ptr \[rsp \+ 32\], r10'){throw 'handle client missing root response stack arg'}
+if($Handle -notmatch 'mov\s+qword ptr \[rsp \+ 40\], r10'){throw 'handle client missing css response stack arg'}
+if($Handle -notmatch 'mov\s+qword ptr \[rsp \+ 48\], r10'){throw 'handle client missing missing-response stack arg'}
 if($Handle -notmatch 'mov\s+dword ptr \[rbp - 44\], eax'){throw 'handle client does not keep selected route result'}
+if($Handle -notmatch 'dw_runtime_handle_client_response_ready:'){throw 'handle client missing preselected response fast path'}
 Write-Output 'verify-v2hotshape: ok'

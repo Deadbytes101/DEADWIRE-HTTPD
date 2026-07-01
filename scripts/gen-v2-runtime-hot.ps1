@@ -15,13 +15,66 @@ if (-not (Test-Path $BuildDir)) {
 
 $Source = Get-Content -Raw -Encoding UTF8 $SourcePath
 
+$ClientResponseSlotsOld = @'
+.equ DW_CLIENT_RESPONSE_PTR, 24
+'@
+
+$ClientResponseSlotsNew = @'
+.equ DW_CLIENT_RESPONSE_PTR, 24
+.equ DW_CLIENT_HEALTH_RESPONSE_PTR, 32
+.equ DW_CLIENT_ROOT_RESPONSE_PTR, 40
+.equ DW_CLIENT_CSS_RESPONSE_PTR, 48
+.equ DW_CLIENT_MISSING_RESPONSE_PTR, 56
+'@
+
 $RouteExternOld = @'
 .extern CreateThread
 '@
 
 $RouteExternNew = @'
 .extern CreateThread
-.extern dw_runtime_select_route
+.extern dw_runtime_select_client_response
+'@
+
+$HandleFrameOld = @'
+dw_runtime_handle_client:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 64
+'@
+
+$HandleFrameNew = @'
+dw_runtime_handle_client:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 96
+'@
+
+$HandleClientSaveOld = @'
+    mov r10, rcx
+    mov rax, qword ptr [r10 + DW_CLIENT_SOCKET]
+'@
+
+$HandleClientSaveNew = @'
+    mov r10, rcx
+    mov qword ptr [rbp - 72], r10
+    mov rax, qword ptr [r10 + DW_CLIENT_SOCKET]
+'@
+
+$HandleResponseOld = @'
+    mov rax, qword ptr [r10 + DW_CLIENT_RESPONSE_PTR]
+    test rax, rax
+    je .dw_runtime_handle_client_no_response
+    mov qword ptr [rbp - 32], rax
+
+    mov rcx, qword ptr [rbp - 8]
+'@
+
+$HandleResponseNew = @'
+    mov rax, qword ptr [r10 + DW_CLIENT_RESPONSE_PTR]
+    mov qword ptr [rbp - 32], rax
+
+    mov rcx, qword ptr [rbp - 8]
 '@
 
 $RouteHookOld = @'
@@ -37,11 +90,31 @@ $RouteHookNew = @'
     cdqe
     mov qword ptr [rbp - 40], rax
 
-    mov rcx, qword ptr [rbp - 16]
-    mov rdx, qword ptr [rbp - 40]
-    call dw_runtime_select_route
-    mov dword ptr [rbp - 44], eax
+    mov r10, qword ptr [rbp - 32]
+    test r10, r10
+    jne .dw_runtime_handle_client_response_ready
 
+    mov rcx, qword ptr [rbp - 72]
+    mov rdx, qword ptr [rbp - 16]
+    mov r8, qword ptr [rbp - 40]
+    mov r9, qword ptr [rcx + DW_CLIENT_HEALTH_RESPONSE_PTR]
+    mov r10, qword ptr [rcx + DW_CLIENT_ROOT_RESPONSE_PTR]
+    mov qword ptr [rsp + 32], r10
+    mov r10, qword ptr [rcx + DW_CLIENT_CSS_RESPONSE_PTR]
+    mov qword ptr [rsp + 40], r10
+    mov r10, qword ptr [rcx + DW_CLIENT_MISSING_RESPONSE_PTR]
+    mov qword ptr [rsp + 48], r10
+    call dw_runtime_select_client_response
+    test eax, eax
+    je .dw_runtime_handle_client_no_response
+    mov dword ptr [rbp - 44], eax
+    mov r10, qword ptr [rbp - 72]
+    mov rax, qword ptr [r10 + DW_CLIENT_RESPONSE_PTR]
+    test rax, rax
+    je .dw_runtime_handle_client_no_response
+    mov qword ptr [rbp - 32], rax
+
+.dw_runtime_handle_client_response_ready:
     mov rcx, qword ptr [rbp - 16]
     mov rdx, qword ptr [rbp - 40]
     call dw_runtime_request_is_get
@@ -265,7 +338,11 @@ dw_runtime_work_step:
 '@
 
 $Hot = $Source
+$Hot = $Hot.Replace($ClientResponseSlotsOld, $ClientResponseSlotsNew)
 $Hot = $Hot.Replace($RouteExternOld, $RouteExternNew)
+$Hot = $Hot.Replace($HandleFrameOld, $HandleFrameNew)
+$Hot = $Hot.Replace($HandleClientSaveOld, $HandleClientSaveNew)
+$Hot = $Hot.Replace($HandleResponseOld, $HandleResponseNew)
 $Hot = $Hot.Replace($RouteHookOld, $RouteHookNew)
 $Hot = $Hot.Replace($AcceptOld, $AcceptNew)
 $Hot = $Hot.Replace($DrainOld, $DrainNew)
@@ -280,9 +357,13 @@ if (-not $Hot.Contains('dw_runtime_accept_enqueue:')) {
     throw 'generated source missing accept enqueue symbol'
 }
 foreach ($Needle in @(
-    '.extern dw_runtime_select_route',
-    'call dw_runtime_select_route',
+    '.extern dw_runtime_select_client_response',
+    'call dw_runtime_select_client_response',
+    'mov qword ptr [rsp + 32], r10',
+    'mov qword ptr [rsp + 40], r10',
+    'mov qword ptr [rsp + 48], r10',
     'mov dword ptr [rbp - 44], eax',
+    'dw_runtime_handle_client_response_ready:',
     'jmp dw_runtime_queue_push',
     'jmp dw_runtime_queue_pop',
     'dw_runtime_worker_take_next_ready:',
