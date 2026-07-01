@@ -33,7 +33,6 @@ $EX=Join-Path $B 'verify_runtime_v2routeflowprobe.exe'
 extern int dw_runtime_live_open(uint64_t *live_context);
 extern int dw_runtime_live_accept_once(uint64_t *live_context, uint64_t *client_context);
 extern int dw_runtime_live_close(uint64_t *live_context);
-extern int dw_runtime_select_client_response(uint64_t *client, const char *request, int request_length, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
 extern int dw_runtime_handle_client(uint64_t *client_context);
 
 static int has_text(const char *buffer, int length, const char *needle) {
@@ -62,17 +61,16 @@ static int run_one(uint64_t *live, const struct sockaddr_in *bound, const char *
     uint64_t missing[6] = {(uint64_t)missing_status, sizeof(missing_status)-1, (uint64_t)text_type, sizeof(text_type)-1, (uint64_t)missing_body, sizeof(missing_body)-1};
     char request_buffer[512] = {0};
     char response_buffer[2048] = {0};
-    uint64_t client[4] = {99, (uint64_t)request_buffer, sizeof(request_buffer), 0};
+    uint64_t client[8] = {99, (uint64_t)request_buffer, sizeof(request_buffer), 0, (uint64_t)health, (uint64_t)root, (uint64_t)css, (uint64_t)missing};
     SOCKET peer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (peer == INVALID_SOCKET) return 1;
     if (connect(peer, (const struct sockaddr *)bound, sizeof(*bound))) return 2;
     if (dw_runtime_live_accept_once(live, client)) return 3;
+    if (client[3]) return 4;
     int request_length = (int)strlen(request);
-    int route = dw_runtime_select_client_response(client, request, request_length, (uint64_t)health, (uint64_t)root, (uint64_t)css, (uint64_t)missing);
-    if (!route) return 4;
-    if (!client[3]) return 5;
-    if (send(peer, request, request_length, 0) != request_length) return 6;
-    if (dw_runtime_handle_client(client)) return 7;
+    if (send(peer, request, request_length, 0) != request_length) return 5;
+    if (dw_runtime_handle_client(client)) return 6;
+    if (!client[3]) return 7;
     int received = recv(peer, response_buffer, sizeof(response_buffer)-1, 0);
     if (received <= 0) return 8;
     response_buffer[received] = 0;
