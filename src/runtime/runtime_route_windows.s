@@ -22,6 +22,7 @@
 .global dw_runtime_select_route
 .global dw_runtime_response_for_route
 .global dw_runtime_client_select_response
+.global dw_runtime_select_client_response
 
 # dw_runtime_request_path_is(request rcx, length rdx, path r8, path_length r9) maps to a narrow V2 route match boundary.
 dw_runtime_request_path_is:
@@ -182,4 +183,52 @@ dw_runtime_client_select_response:
 
 .dw_runtime_client_select_response_bad:
     mov eax, 1
+    ret
+
+# dw_runtime_select_client_response(client rcx, request rdx, length r8, health r9, root stack5, css stack6, missing stack7) selects a route and writes the response pointer into the V2 client context. Returns the selected route id, or 0 on failure.
+dw_runtime_select_client_response:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 96
+
+    test rcx, rcx
+    je .dw_runtime_select_client_response_bad
+    test rdx, rdx
+    je .dw_runtime_select_client_response_bad
+    test r8d, r8d
+    jle .dw_runtime_select_client_response_bad
+
+    mov qword ptr [rbp - 8], rcx
+    mov qword ptr [rbp - 16], r9
+    mov rax, qword ptr [rbp + 48]
+    mov qword ptr [rbp - 24], rax
+    mov rax, qword ptr [rbp + 56]
+    mov qword ptr [rbp - 32], rax
+    mov rax, qword ptr [rbp + 64]
+    mov qword ptr [rbp - 40], rax
+
+    mov rcx, rdx
+    mov edx, r8d
+    call dw_runtime_select_route
+    mov dword ptr [rbp - 44], eax
+
+    mov rcx, qword ptr [rbp - 8]
+    mov edx, dword ptr [rbp - 44]
+    mov r8, qword ptr [rbp - 16]
+    mov r9, qword ptr [rbp - 24]
+    mov rax, qword ptr [rbp - 32]
+    mov qword ptr [rsp + 32], rax
+    mov rax, qword ptr [rbp - 40]
+    mov qword ptr [rsp + 40], rax
+    call dw_runtime_client_select_response
+    test eax, eax
+    jne .dw_runtime_select_client_response_bad
+
+    mov eax, dword ptr [rbp - 44]
+    leave
+    ret
+
+.dw_runtime_select_client_response_bad:
+    xor eax, eax
+    leave
     ret
