@@ -11,7 +11,7 @@ function Has([string]$Haystack,[string]$Needle,[string]$Label){if(!$Haystack.Con
 Has $M 'VERIFY_TRIPLE_THREAD_CMD = $(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File scripts/verify-v2modeprobe.ps1' 'v2 mode probe make binding'
 Has $M 'verify-triple-thread:' 'verify triple thread target'
 Has $M "`t`$(VERIFY_TRIPLE_THREAD_CMD)" 'verify triple thread command'
-Has $V2 "$NextProbe = Join-Path $RepoRoot 'scripts/verify-v2final.ps1'" 'run-to-final binding'
+Has $V2 '$NextProbe = Join-Path $RepoRoot ''scripts/verify-v2final.ps1''' 'run-to-final binding'
 Has $V2 '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $NextProbe' 'run-to-final execution'
 Has $F '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $FinalGateProbe' 'final gate execution'
 Has $F '& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $RequestProbe' 'request gate execution'
