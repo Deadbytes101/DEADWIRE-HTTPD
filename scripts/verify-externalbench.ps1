@@ -1,0 +1,25 @@
+$ErrorActionPreference='Stop'
+$R=Resolve-Path (Join-Path $PSScriptRoot '..')
+$Bench=Join-Path $R 'scripts/bench-external-server.ps1'
+if(!(Test-Path $Bench)){throw "missing $Bench"}
+$S=Get-Content -Raw -Encoding UTF8 $Bench
+function Has([string]$Needle,[string]$Label){if(!$S.Contains($Needle)){throw "missing $Label"}}
+Has '[string] $ServerExePath' 'server executable parameter'
+Has '[string[]] $ServerArgs' 'server args parameter'
+Has '[string] $HostName' 'host parameter'
+Has '[int] $Port' 'port parameter'
+Has '[string] $Path' 'path parameter'
+Has '[int] $Requests' 'requests parameter'
+Has '[int] $Rounds' 'rounds parameter'
+Has '[int] $Warmup' 'warmup parameter'
+Has '[switch] $KeepAlive' 'keepalive switch'
+Has '[switch] $ExistingServer' 'existing server switch'
+Has 'tools/deadwire_bench.c' 'native client source'
+Has 'deadwire_external_bench.exe' 'external client executable'
+Has 'Start-Process -FilePath $ResolvedServerExe' 'server launch'
+Has '$BenchExe $HostName $Port $ReadyPath 1 1' 'readiness probe'
+Has '$BenchExe $HostName $Port $Path $Warmup 1' 'warmup run'
+Has '$BenchExe $HostName $Port $Path $Requests $Rounds' 'benchmark run'
+Has '--keepalive' 'keepalive mode'
+Has 'Stop-Process -Id $ServerProcess.Id -Force' 'server cleanup'
+Write-Output 'verify-externalbench: ok'
