@@ -12,6 +12,7 @@ $TopologyProbe=Join-Path $R 'scripts/verify-v2topology.ps1'
 $LiveBenchProbe=Join-Path $R 'scripts/verify-v2livebench.ps1'
 $ExternalBenchProbe=Join-Path $R 'scripts/verify-externalbench.ps1'
 $ScoreBenchProbe=Join-Path $R 'scripts/verify-scorebench.ps1'
+$LinuxScoreBenchProbe=Join-Path $R 'scripts/verify-linux-scorebench.ps1'
 $FinalGateProbe=Join-Path $R 'scripts/verify-v2finalgate.ps1'
 $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
@@ -33,6 +34,7 @@ if(!(Test-Path $TopologyProbe)){throw "missing $TopologyProbe"}
 if(!(Test-Path $LiveBenchProbe)){throw "missing $LiveBenchProbe"}
 if(!(Test-Path $ExternalBenchProbe)){throw "missing $ExternalBenchProbe"}
 if(!(Test-Path $ScoreBenchProbe)){throw "missing $ScoreBenchProbe"}
+if(!(Test-Path $LinuxScoreBenchProbe)){throw "missing $LinuxScoreBenchProbe"}
 if(!(Test-Path $FinalGateProbe)){throw "missing $FinalGateProbe"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
@@ -57,6 +59,8 @@ if($LASTEXITCODE){throw "v2 live bench $LASTEXITCODE"}
 if($LASTEXITCODE){throw "external bench $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ScoreBenchProbe
 if($LASTEXITCODE){throw "score bench $LASTEXITCODE"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $LinuxScoreBenchProbe
+if($LASTEXITCODE){throw "linux score bench $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe
 if($LASTEXITCODE){throw "v2 select chain $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectClientProbe
