@@ -5,13 +5,13 @@ $Index=Join-Path $R 'public/index.html'
 $Css=Join-Path $R 'public/style.css'
 foreach($P in @($Boot,$Index,$Css)){if(!(Test-Path $P)){throw "missing $P"}}
 $S=Get-Content -Raw -Encoding UTF8 $Boot
-$IndexText=[System.IO.File]::ReadAllText($Index,[System.Text.Encoding]::UTF8)
-$CssText=[System.IO.File]::ReadAllText($Css,[System.Text.Encoding]::UTF8)
+$IndexText=[System.IO.File]::ReadAllText($Index,[System.Text.Encoding]::UTF8).Replace("`r`n","`n").Replace("`r","`n")
+$CssText=[System.IO.File]::ReadAllText($Css,[System.Text.Encoding]::UTF8).Replace("`r`n","`n").Replace("`r","`n")
 $IndexBytes=[System.Text.Encoding]::UTF8.GetByteCount($IndexText)
 $CssBytes=[System.Text.Encoding]::UTF8.GetByteCount($CssText)
 function Has([string]$Needle,[string]$Label){if(!$S.Contains($Needle)){throw "missing $Label"}}
-if($IndexBytes -ne 1254){throw "bad index bytes"}
-if($CssBytes -ne 772){throw "bad css bytes"}
+if($IndexBytes -ne 1254){throw "bad index bytes $IndexBytes"}
+if($CssBytes -ne 772){throw "bad css bytes $CssBytes"}
 Has 'Content-Length: 1254\r\n' 'root length'
 Has 'Content-Length: 772\r\n' 'css length'
 Has 'Content-Length: 13\r\n' 'health length'
