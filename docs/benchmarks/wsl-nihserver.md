@@ -57,6 +57,8 @@ The Linux DEADWIRE binary should be:
 build/deadwire
 ```
 
+The current Linux assembly build listens on port `18080`.
+
 ## Build nihserver in WSL
 
 ```sh
@@ -80,8 +82,8 @@ Run this from the DEADWIRE repository inside WSL:
 sh scripts/bench-score.sh \
   --left-name DEADWIRE_LINUX \
   --left-exe ./build/deadwire \
-  --left-args "19095" \
-  --left-port 19095 \
+  --left-args "" \
+  --left-port 18080 \
   --right-name NIHSERVER \
   --right-exe ../nihserver/target/nihserver/nihserver \
   --right-args "19096 public 8" \
@@ -118,8 +120,8 @@ If both servers handle keep-alive correctly for the chosen path, add `--keepaliv
 sh scripts/bench-score.sh \
   --left-name DEADWIRE_LINUX \
   --left-exe ./build/deadwire \
-  --left-args "19095" \
-  --left-port 19095 \
+  --left-args "" \
+  --left-port 18080 \
   --right-name NIHSERVER \
   --right-exe ../nihserver/target/nihserver/nihserver \
   --right-args "19096 public 8" \
