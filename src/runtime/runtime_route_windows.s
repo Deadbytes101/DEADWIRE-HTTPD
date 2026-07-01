@@ -4,6 +4,7 @@
 .equ DW_ROUTE_ROOT, 2
 .equ DW_ROUTE_CSS, 3
 .equ DW_ROUTE_MISSING, 4
+.equ DW_CLIENT_RESPONSE_PTR, 24
 
 .section .rdata
 .dw_route_health_path:
@@ -20,6 +21,7 @@
 .global dw_runtime_request_path_is
 .global dw_runtime_select_route
 .global dw_runtime_response_for_route
+.global dw_runtime_client_select_response
 
 # dw_runtime_request_path_is(request rcx, length rdx, path r8, path_length r9) maps to a narrow V2 route match boundary.
 dw_runtime_request_path_is:
@@ -145,4 +147,39 @@ dw_runtime_response_for_route:
 
 .dw_runtime_response_for_route_css:
     mov rax, r9
+    ret
+
+# dw_runtime_client_select_response(client rcx, route rdx, health r8, root r9, css stack5, missing stack6) writes the selected response pointer into the V2 client context.
+dw_runtime_client_select_response:
+    test rcx, rcx
+    je .dw_runtime_client_select_response_bad
+    cmp edx, DW_ROUTE_HEALTH
+    je .dw_runtime_client_select_response_health
+    cmp edx, DW_ROUTE_ROOT
+    je .dw_runtime_client_select_response_root
+    cmp edx, DW_ROUTE_CSS
+    je .dw_runtime_client_select_response_css
+    mov rax, qword ptr [rsp + 48]
+    jmp .dw_runtime_client_select_response_set
+
+.dw_runtime_client_select_response_health:
+    mov rax, r8
+    jmp .dw_runtime_client_select_response_set
+
+.dw_runtime_client_select_response_root:
+    mov rax, r9
+    jmp .dw_runtime_client_select_response_set
+
+.dw_runtime_client_select_response_css:
+    mov rax, qword ptr [rsp + 40]
+
+.dw_runtime_client_select_response_set:
+    test rax, rax
+    je .dw_runtime_client_select_response_bad
+    mov qword ptr [rcx + DW_CLIENT_RESPONSE_PTR], rax
+    xor eax, eax
+    ret
+
+.dw_runtime_client_select_response_bad:
+    mov eax, 1
     ret
