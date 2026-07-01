@@ -35,6 +35,7 @@ $cc = if ($env:CC) { $env:CC } else { 'cc' }
 $CompileArgs = @('-O2', '-std=c99', '-Wall', '-Wextra', '-o', $BenchExe, $BenchSrc)
 $IsWinHost = ($env:OS -eq 'Windows_NT') -or ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows))
 if ($IsWinHost) { $CompileArgs += '-lws2_32' }
+if (!$IsWinHost) { $CompileArgs = @('-D_POSIX_C_SOURCE=200809L') + $CompileArgs }
 & $cc @CompileArgs
 if ($LASTEXITCODE) { throw "bench-external-server: failed to compile native bench client with $cc" }
 
