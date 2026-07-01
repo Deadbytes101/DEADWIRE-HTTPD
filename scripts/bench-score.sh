@@ -71,7 +71,7 @@ bench_exe=$build_dir/deadwire_score_bench
 mkdir -p "$build_dir"
 [ -f "$bench_src" ] || { echo "bench-score.sh: missing bench source: $bench_src" >&2; exit 1; }
 cc_bin=${CC:-cc}
-"$cc_bin" -O2 -std=c99 -Wall -Wextra -o "$bench_exe" "$bench_src"
+"$cc_bin" -D_POSIX_C_SOURCE=200809L -O2 -std=c99 -Wall -Wextra -o "$bench_exe" "$bench_src"
 
 server_pid=
 cleanup_server() {
