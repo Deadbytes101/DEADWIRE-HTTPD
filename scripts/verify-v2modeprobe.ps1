@@ -32,7 +32,9 @@ $BootShapeProbe=Join-Path $R 'scripts/verify-v2bootshape.ps1'
 if($LASTEXITCODE){throw "boot shape $LASTEXITCODE"}
 $B=Join-Path $R 'build'
 if(!(Test-Path $B)){New-Item -ItemType Directory -Path $B|Out-Null}
-$RT=Join-Path $R 'src/runtime/runtime_windows.s'
+$Gen=Join-Path $R 'scripts/gen-v2-runtime-hot.ps1'
+$RT=Join-Path $B 'deadwire_v2_runtime_hot.s'
+$ROUTE=Join-Path $R 'src/runtime/runtime_route_windows.s'
 $LV=Join-Path $R 'src/runtime/runtime_live_windows.s'
 $AC=Join-Path $R 'src/runtime/runtime_accept_windows.s'
 $BR=Join-Path $R 'src/runtime/runtime_bridge_windows.s'
@@ -41,9 +43,12 @@ $BD=Join-Path $R 'src/runtime/runtime_bound_windows.s'
 $MO=Join-Path $R 'src/runtime/runtime_mode_windows.s'
 $HE=Join-Path $R 'src/runtime/runtime_http_engine_entry_windows.s'
 $CL=Join-Path $R 'src/runtime/runtime_live_close_windows.s'
-foreach($P in @($RT,$LV,$AC,$BR,$TK,$BD,$MO,$HE,$CL)){if(!(Test-Path $P)){throw "missing $P"}}
-$RO=Join-Path $B 'v2mp_runtime.o'; $LO=Join-Path $B 'v2mp_live.o'; $AO=Join-Path $B 'v2mp_accept.o'; $BO=Join-Path $B 'v2mp_bridge.o'; $TO=Join-Path $B 'v2mp_tick.o'; $BDO=Join-Path $B 'v2mp_bound.o'; $MOO=Join-Path $B 'v2mp_mode.o'; $HO=Join-Path $B 'v2mp_http.o'; $CLO=Join-Path $B 'v2mp_close.o'
+foreach($P in @($Gen,$ROUTE,$LV,$AC,$BR,$TK,$BD,$MO,$HE,$CL)){if(!(Test-Path $P)){throw "missing $P"}}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Gen
+if($LASTEXITCODE){throw "gen hot $LASTEXITCODE"}
+$RO=Join-Path $B 'v2mp_runtime.o'; $RTO=Join-Path $B 'v2mp_route.o'; $LO=Join-Path $B 'v2mp_live.o'; $AO=Join-Path $B 'v2mp_accept.o'; $BO=Join-Path $B 'v2mp_bridge.o'; $TO=Join-Path $B 'v2mp_tick.o'; $BDO=Join-Path $B 'v2mp_bound.o'; $MOO=Join-Path $B 'v2mp_mode.o'; $HO=Join-Path $B 'v2mp_http.o'; $CLO=Join-Path $B 'v2mp_close.o'
 & as --64 -o $RO $RT; if($LASTEXITCODE){throw 'as runtime'}
+& as --64 -o $RTO $ROUTE; if($LASTEXITCODE){throw 'as route'}
 & as --64 -o $LO $LV; if($LASTEXITCODE){throw 'as live'}
 & as --64 -o $AO $AC; if($LASTEXITCODE){throw 'as accept'}
 & as --64 -o $BO $BR; if($LASTEXITCODE){throw 'as bridge'}
@@ -98,7 +103,7 @@ int main(void){
 }
 '@|Set-Content -Encoding ASCII $C
 & gcc -c -o $CO $C; if($LASTEXITCODE){throw 'cc'}
-& gcc -o $EX $CO $RO $LO $AO $BO $TO $BDO $MOO $HO $CLO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
+& gcc -o $EX $CO $RO $RTO $LO $AO $BO $TO $BDO $MOO $HO $CLO -lws2_32 -lkernel32; if($LASTEXITCODE){throw 'link'}
 & $EX; if($LASTEXITCODE){throw "run $LASTEXITCODE"}
 Write-Output 'verify-v2modeprobe: ok'
 $HandleProbe=Join-Path $R 'scripts/verify-v2handleprobe.ps1'
