@@ -3,6 +3,7 @@ $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $Build=Join-Path $R 'scripts/build-v2-runtime.ps1'
 $BuildSourceProbe=Join-Path $R 'scripts/verify-v2buildsource.ps1'
 $RequestProbe=Join-Path $R 'scripts/verify-v2requestprobe.ps1'
+$FinalGateProbe=Join-Path $R 'scripts/verify-v2finalgate.ps1'
 $HotExeProbe=Join-Path $R 'scripts/verify-v2hotexe.ps1'
 $BudgetProbe=Join-Path $R 'scripts/verify-v2budget.ps1'
 $SizeProbe=Join-Path $R 'scripts/verify-v2size.ps1'
@@ -14,6 +15,7 @@ $Program=Join-Path $R 'build/deadwire_v2_runtime.exe'
 if(!(Test-Path $Build)){throw "missing $Build"}
 if(!(Test-Path $BuildSourceProbe)){throw "missing $BuildSourceProbe"}
 if(!(Test-Path $RequestProbe)){throw "missing $RequestProbe"}
+if(!(Test-Path $FinalGateProbe)){throw "missing $FinalGateProbe"}
 if(!(Test-Path $HotExeProbe)){throw "missing $HotExeProbe"}
 if(!(Test-Path $BudgetProbe)){throw "missing $BudgetProbe"}
 if(!(Test-Path $SizeProbe)){throw "missing $SizeProbe"}
@@ -21,6 +23,8 @@ if(!(Test-Path $CallBudgetProbe)){throw "missing $CallBudgetProbe"}
 if(!(Test-Path $BranchBudgetProbe)){throw "missing $BranchBudgetProbe"}
 if(!(Test-Path $SelectClientProbe)){throw "missing $SelectClientProbe"}
 if(!(Test-Path $SelectChainProbe)){throw "missing $SelectChainProbe"}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $FinalGateProbe
+if($LASTEXITCODE){throw "v2 final gate $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectChainProbe
 if($LASTEXITCODE){throw "v2 select chain $LASTEXITCODE"}
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SelectClientProbe
