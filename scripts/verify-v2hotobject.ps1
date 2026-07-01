@@ -27,7 +27,10 @@ foreach($Name in @('dw_runtime_worker_take','dw_runtime_worker_complete')){
     $Body=ObjBlock $Name
     if($Body -match '\bcall\b'){throw "$Name object still has call"}
 }
+$Handle=ObjBlock 'dw_runtime_handle_client'
+if($Handle -notmatch '\bcall\b'){throw 'handle client object has no select-client call'}
 $Reloc=(& objdump -r $Obj) -join "`n"
 if($LASTEXITCODE){throw "hot object reloc $LASTEXITCODE"}
-if($Reloc -notmatch 'dw_runtime_select_route'){throw 'hot object missing route selector relocation'}
+if($Reloc -notmatch 'dw_runtime_select_client_response'){throw 'hot object missing select-client relocation'}
+if($Reloc -match 'dw_runtime_select_route'){throw 'hot object still has split route selector relocation'}
 Write-Output 'verify-v2hotobject: ok'
