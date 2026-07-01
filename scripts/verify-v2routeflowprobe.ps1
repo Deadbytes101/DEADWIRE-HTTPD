@@ -33,8 +33,7 @@ $EX=Join-Path $B 'verify_runtime_v2routeflowprobe.exe'
 extern int dw_runtime_live_open(uint64_t *live_context);
 extern int dw_runtime_live_accept_once(uint64_t *live_context, uint64_t *client_context);
 extern int dw_runtime_live_close(uint64_t *live_context);
-extern int dw_runtime_select_route(const char *request, int request_length);
-extern int dw_runtime_client_select_response(uint64_t *client, int route, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
+extern int dw_runtime_select_client_response(uint64_t *client, const char *request, int request_length, uint64_t health, uint64_t root, uint64_t css, uint64_t missing);
 extern int dw_runtime_handle_client(uint64_t *client_context);
 
 static int has_text(const char *buffer, int length, const char *needle) {
@@ -69,8 +68,8 @@ static int run_one(uint64_t *live, const struct sockaddr_in *bound, const char *
     if (connect(peer, (const struct sockaddr *)bound, sizeof(*bound))) return 2;
     if (dw_runtime_live_accept_once(live, client)) return 3;
     int request_length = (int)strlen(request);
-    int route = dw_runtime_select_route(request, request_length);
-    if (dw_runtime_client_select_response(client, route, (uint64_t)health, (uint64_t)root, (uint64_t)css, (uint64_t)missing)) return 4;
+    int route = dw_runtime_select_client_response(client, request, request_length, (uint64_t)health, (uint64_t)root, (uint64_t)css, (uint64_t)missing);
+    if (!route) return 4;
     if (!client[3]) return 5;
     if (send(peer, request, request_length, 0) != request_length) return 6;
     if (dw_runtime_handle_client(client)) return 7;
