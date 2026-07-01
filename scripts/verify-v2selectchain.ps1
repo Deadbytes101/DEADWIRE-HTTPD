@@ -2,11 +2,13 @@ $ErrorActionPreference='Stop'
 $R=Resolve-Path (Join-Path $PSScriptRoot '..')
 $Boot=Join-Path $R 'src/runtime/runtime_boot_windows.c'
 $RouteFlow=Join-Path $R 'scripts/verify-v2routeflowprobe.ps1'
+$Mode=Join-Path $R 'scripts/verify-v2modeprobe.ps1'
 $Handle=Join-Path $R 'scripts/verify-v2handleprobe.ps1'
 $SelectClient=Join-Path $R 'scripts/verify-v2selectclientprobe.ps1'
-foreach($P in @($Boot,$RouteFlow,$Handle,$SelectClient)){if(!(Test-Path $P)){throw "missing $P"}}
+foreach($P in @($Boot,$RouteFlow,$Mode,$Handle,$SelectClient)){if(!(Test-Path $P)){throw "missing $P"}}
 $BootS=Get-Content -Raw -Encoding UTF8 $Boot
 $RouteFlowS=Get-Content -Raw -Encoding UTF8 $RouteFlow
+$ModeS=Get-Content -Raw -Encoding UTF8 $Mode
 $HandleS=Get-Content -Raw -Encoding UTF8 $Handle
 $SelectClientS=Get-Content -Raw -Encoding UTF8 $SelectClient
 function Has([string]$Text,[string]$Needle,[string]$Label){if(!$Text.Contains($Needle)){throw "missing $Label"}}
@@ -19,6 +21,11 @@ Has $RouteFlowS 'client[8] = {99, (uint64_t)request_buffer, sizeof(request_buffe
 Has $RouteFlowS 'if (client[3]) return 4;' 'routeflow starts without selected response'
 Has $RouteFlowS 'if (dw_runtime_handle_client(client)) return 6;' 'routeflow hot call'
 Has $RouteFlowS 'if (!client[3]) return 7;' 'routeflow hot selected response'
+Has $ModeS 'deadwire_v2_runtime_hot.s' 'mode hot source'
+Has $ModeS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'mode response table client'
+Has $ModeS 'if(client[3])return 6;' 'mode starts without selected response'
+Has $ModeS 'if(dw_runtime_mode_bound(mc))return 8;' 'mode bound call'
+Has $ModeS 'if(client[3]!=(uint64_t)resp)return 10;' 'mode selected response result'
 Has $HandleS 'deadwire_v2_runtime_hot.s' 'handle hot source'
 Has $HandleS 'client[8]={99,(uint64_t)reqbuf,sizeof(reqbuf),0' 'handle response table client'
 Has $HandleS 'if(client[3])return 6;' 'handle starts without selected response'
@@ -30,6 +37,10 @@ Lacks $BootS 'dw_runtime_client_select_response(client_context, selected_route' 
 Lacks $RouteFlowS $Select 'routeflow external preselect'
 Lacks $RouteFlowS 'dw_runtime_select_route(request, request_length)' 'routeflow split route'
 Lacks $RouteFlowS 'dw_runtime_client_select_response(client, route' 'routeflow split setter'
+Lacks $ModeS $Select 'mode external preselect'
+Lacks $ModeS 'client[4]={99,(uint64_t)reqbuf,sizeof(reqbuf),(uint64_t)resp}' 'mode old client preload'
+Lacks $ModeS 'dw_runtime_select_route(request, request_length)' 'mode split route'
+Lacks $ModeS 'dw_runtime_client_select_response(client, route' 'mode split setter'
 Lacks $HandleS $Select 'handle external preselect'
 Lacks $HandleS 'client[3]=(uint64_t)resp;' 'handle direct preload'
 Lacks $HandleS 'client[3] = (uint64_t)resp;' 'handle spaced preload'
