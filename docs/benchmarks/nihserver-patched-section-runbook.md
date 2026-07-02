@@ -32,25 +32,20 @@ make verify
 
 This edits only the local `nihserver` checkout. It does not modify this repository and it must not be presented as an upstream nihserver build.
 
+The upstream `syscall.s` has `global` declarations between the section marker and the first syscall wrapper, so replace the section marker itself.
+
 ```sh
 cd ~/src/nihserver
 cp src/nihserver/linux/syscall.s src/nihserver/linux/syscall.s.bak
-python3 - <<'PY'
-from pathlib import Path
-p = Path('src/nihserver/linux/syscall.s')
-s = p.read_text()
-old = 'section .data\n\nsyscall_open:'
-new = 'section .text\n\nsyscall_open:'
-if new in s:
-    print('nihserver patched-section: already patched')
-elif old in s:
-    p.write_text(s.replace(old, new, 1))
-    print('nihserver patched-section: patched syscall wrapper section')
-else:
-    raise SystemExit('nihserver patched-section: expected section marker not found')
-PY
+perl -0pi -e 's/section \.data\n/section .text\n/' src/nihserver/linux/syscall.s
 make clean
 make
+```
+
+Confirm the marker changed:
+
+```sh
+grep -n 'section \.text' src/nihserver/linux/syscall.s | head
 ```
 
 ## Smoke test the external target
